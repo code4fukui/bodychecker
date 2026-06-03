@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BodyChecker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #17202a;
+      --muted: #667085;
+      --line: #d9dee7;
+      --accent: #176b87;
+      --ok: #16835f;
+      --bad: #b42318;
+      --shadow: 0 12px 30px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 48px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .records {
+      max-height: 72vh;
+      overflow: auto;
+    }
+
+    .day {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .day-title {
+      padding: 10px 12px;
+      background: #f9fafb;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .record {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      width: 100%;
+      padding: 11px 12px;
+      border: 0;
+      border-top: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .record.active,
+    .record:hover {
+      background: #eef7f8;
+    }
+
+    .record strong,
+    .record span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .record span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .record em {
+      align-self: center;
+      color: var(--accent);
+      font-style: normal;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .metric {
+      min-height: 96px;
+      padding: 13px;
+      background: white;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .value {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-top: 7px;
+      font-size: 27px;
+      font-weight: 720;
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .unit {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .diff {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+      min-height: 22px;
+    }
+
+    .diff span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #f9fafb;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .diff .delta {
+      border-color: #b7d3dc;
+      background: #eef7f8;
+      color: var(--accent);
+      font-weight: 650;
+    }
+
+    .diff .good {
+      border-color: #badbcc;
+      background: #edf7f2;
+      color: var(--ok);
+      font-weight: 650;
+    }
+
+    .diff .warn {
+      border-color: #f1c6c2;
+      background: #fff1f0;
+      color: var(--bad);
+      font-weight: 650;
+    }
+
+    .segments {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .segment {
+      min-height: 94px;
+      padding: 12px;
+      background: white;
+    }
+
+    .segment h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 5px 8px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .kv span:nth-child(odd) {
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 30px 14px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 820px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .records {
+        max-height: 320px;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .segments {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        padding: 14px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .metrics,
+      .segments {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>BodyChecker</h1>
+      <span class="pill">記録 <strong id="count">0</strong></span>
+    </header>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>日付別記録</h2>
+          <span id="message" class="pill">--</span>
+        </div>
+        <div id="records" class="records">
+          <div class="empty">記録がありません</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>測定値</h2>
+          <span id="measuredAt" class="pill">--</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div><div id="weightDiff" class="diff"></div></div>
+          <div class="metric"><div class="label">体脂肪率</div><div class="value"><span id="bodyFatPercent">--</span><span class="unit">%</span></div><div id="bodyFatDiff" class="diff"></div></div>
+          <div class="metric"><div class="label">筋肉量</div><div class="value"><span id="muscleMassKg">--</span><span class="unit">kg</span></div><div id="muscleDiff" class="diff"></div></div>
+          <div class="metric"><div class="label">BMI</div><div class="value"><span id="bmi">--</span></div></div>
+          <div class="metric"><div class="label">内臓脂肪レベル</div><div class="value"><span id="visceralFatLevel">--</span></div><div id="visceralDiff" class="diff"></div></div>
+          <div class="metric"><div class="label">SMI</div><div class="value"><span id="smi">--</span></div><div id="smiDiff" class="diff"></div></div>
+          <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
+          <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
+          <div class="metric"><div class="label">四肢骨格筋量</div><div class="value"><span id="asm">--</span><span class="unit">kg</span></div></div>
+        </div>
+        <div class="panel-head">
+          <h2>部位別</h2>
+          <span class="pill">脂肪率 / 筋肉量</span>
+        </div>
+        <div id="segments" class="segments"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const STORAGE_KEY = "bodychecker-user-records";
+    const SEGMENTS = [
+      ["rightLeg", "右足"],
+      ["leftLeg", "左足"],
+      ["rightArm", "右腕"],
+      ["leftArm", "左腕"],
+      ["trunk", "体幹部"],
+    ];
+    const els = Object.fromEntries([
+      "count", "message", "records", "measuredAt", "weightKg", "bodyFatPercent",
+      "muscleMassKg", "bmi", "visceralFatLevel", "smi", "bodyWaterPercent",
+      "basalMetabolicRateKcal", "asm", "weightDiff", "bodyFatDiff", "muscleDiff",
+      "visceralDiff", "smiDiff", "segments",
+    ].map((id) => [id, document.getElementById(id)]));
+    let selectedKey = null;
+
+    function loadRecords() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function decodePayload(text) {
+      const normalized = text.replace(/^data=/, "").replaceAll("-", "+").replaceAll("_", "/");
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+      const binary = atob(padded);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function recordKey(record) {
+      return [record.measuredAt, record.id, record.weightKg, record.bodyFatPercent].join("|");
+    }
+
+    function recordDate(record) {
+      const source = record.measuredAt || record.savedAt || new Date().toISOString();
+      return String(source).slice(0, 10);
+    }
+
+    function formatValue(value) {
+      if (value == null || value === "") return "--";
+      if (typeof value === "number") return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
+      return String(value);
+    }
+
+    function signedValue(value, unit = "") {
+      if (value == null || Number.isNaN(value)) return "--";
+      const rounded = Math.round(value * 10) / 10;
+      const sign = rounded > 0 ? "+" : "";
+      return `${sign}${rounded}${unit}`;
+    }
+
+    function setText(id, value) {
+      els[id].textContent = formatValue(value);
+    }
+
+    function setDiff(id, current, baseline, unit = "") {
+      const target = els[id];
+      target.textContent = "";
+      if (current == null || baseline == null) return;
+      const base = document.createElement("span");
+      const delta = document.createElement("span");
+      base.textContent = `基準 ${formatValue(baseline)}${unit}`;
+      delta.className = "delta";
+      delta.textContent = `差分 ${signedValue(current - baseline, unit)}`;
+      target.append(base, delta);
+    }
+
+    function setRangeDiff(id, current, baseline, label, status, delta = current - baseline) {
+      const target = els[id];
+      target.textContent = "";
+      if (current == null || baseline == null) return;
+      const base = document.createElement("span");
+      const diff = document.createElement("span");
+      const badge = document.createElement("span");
+      base.textContent = `${label} ${formatValue(baseline)}`;
+      diff.className = "delta";
+      diff.textContent = `差分 ${signedValue(delta)}`;
+      badge.className = status.good ? "good" : "warn";
+      badge.textContent = status.label;
+      target.append(base, diff, badge);
+    }
+
+    function renderSegments(record) {
+      els.segments.textContent = "";
+      for (const [segment, label] of SEGMENTS) {
+        const div = document.createElement("div");
+        div.className = "segment";
+        div.innerHTML = `
+          <h3>${label}</h3>
+          <div class="kv">
+            <span>脂肪率</span><strong>${formatValue(record[`${segment}BodyFatPercent`])}%</strong>
+            <span>筋肉量</span><strong>${formatValue(record[`${segment}MuscleMassKg`])} kg</strong>
+          </div>
+        `;
+        els.segments.append(div);
+      }
+    }
+
+    function renderDetail(record) {
+      if (!record) return;
+      selectedKey = recordKey(record);
+      els.measuredAt.textContent = record.measuredAt ? record.measuredAt.replace("T", " ") : "--";
+      setText("weightKg", record.weightKg);
+      setText("bodyFatPercent", record.bodyFatPercent);
+      setText("muscleMassKg", record.muscleMassKg);
+      setText("bmi", record.bmi);
+      setText("visceralFatLevel", record.visceralFatLevel);
+      setText("smi", record.appendicularSkeletalMuscleMassHeightSquared);
+      setText("bodyWaterPercent", record.bodyWaterPercent);
+      setText("basalMetabolicRateKcal", record.basalMetabolicRateKcal);
+      setText("asm", record.appendicularSkeletalMuscleMassKg);
+      setDiff("weightDiff", record.weightKg, record.standardWeightKg, "kg");
+      setDiff("bodyFatDiff", record.bodyFatPercent, record.standardBodyFatPercent, "%");
+      setDiff("muscleDiff", record.muscleMassKg, record.standardMuscleMassKg, "kg");
+      const visceralStatus = record.visceralFatLevel == null ? null : {
+        good: record.visceralFatLevel <= 12,
+        label: record.visceralFatLevel <= 12 ? "範囲内" : "高め",
+      };
+      if (visceralStatus) setRangeDiff("visceralDiff", record.visceralFatLevel, 12, "健康範囲上限", visceralStatus);
+      const smi = record.appendicularSkeletalMuscleMassHeightSquared;
+      const smiBase = record.sex === "male" ? 7.0 : record.sex === "female" ? 5.7 : null;
+      const smiStatus = smi == null || smiBase == null ? null : {
+        good: smi >= smiBase,
+        label: smi >= smiBase ? "目安以上" : "低め",
+      };
+      if (smiStatus) setRangeDiff("smiDiff", smi, smiBase, "低筋量目安", smiStatus, smi - smiBase);
+      renderSegments(record);
+      renderList(loadRecords());
+    }
+
+    function renderList(records) {
+      els.count.textContent = String(records.length);
+      els.records.textContent = "";
+      if (!records.length) {
+        els.records.innerHTML = '<div class="empty">記録がありません</div>';
+        return;
+      }
+      const grouped = new Map();
+      for (const record of records) {
+        const date = recordDate(record);
+        if (!grouped.has(date)) grouped.set(date, []);
+        grouped.get(date).push(record);
+      }
+      for (const date of [...grouped.keys()].sort().reverse()) {
+        const section = document.createElement("section");
+        section.className = "day";
+        const title = document.createElement("div");
+        title.className = "day-title";
+        title.textContent = date;
+        section.append(title);
+        for (const record of grouped.get(date).sort((a, b) => String(b.measuredAt || b.savedAt).localeCompare(String(a.measuredAt || a.savedAt)))) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `record${recordKey(record) === selectedKey ? " active" : ""}`;
+          const main = document.createElement("span");
+          const titleNode = document.createElement("strong");
+          const sub = document.createElement("span");
+          const value = document.createElement("em");
+          titleNode.textContent = record.measuredAt ? record.measuredAt.replace("T", " ") : date;
+          sub.textContent = record.id ? `ID ${record.id}` : "ID --";
+          value.textContent = `${formatValue(record.weightKg)} kg`;
+          main.append(titleNode, sub);
+          button.append(main, value);
+          button.addEventListener("click", () => renderDetail(record));
+          section.append(button);
+        }
+        els.records.append(section);
+      }
+    }
+
+    function addPayloadFromURL() {
+      const query = location.search.slice(1);
+      if (!query) return null;
+      const record = decodePayload(decodeURIComponent(query));
+      const records = loadRecords();
+      const key = recordKey(record);
+      const exists = records.some((item) => recordKey(item) === key);
+      if (!exists) {
+        records.push(record);
+        saveRecords(records);
+        els.message.textContent = "追加しました";
+      } else {
+        els.message.textContent = "登録済み";
+      }
+      return record;
+    }
+
+    let initial = null;
+    try {
+      initial = addPayloadFromURL();
+    } catch (error) {
+      els.message.textContent = "読込エラー";
+      console.error(error);
+    }
+    const records = loadRecords();
+    renderList(records);
+    renderDetail(initial || records.at(-1));
+  </script>
+</body>
+</html>

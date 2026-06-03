@@ -162,6 +162,10 @@
       align-items: start;
     }
 
+    .grid.qr-mode {
+      grid-template-columns: 1fr;
+    }
+
     .panel {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -227,6 +231,49 @@
       color: var(--muted);
       font-size: 13px;
       font-weight: 500;
+    }
+
+    .diff {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+      min-height: 24px;
+    }
+
+    .diff span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #f9fafb;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .diff .delta {
+      border-color: #b7d3dc;
+      background: #eef7f8;
+      color: var(--accent);
+      font-weight: 650;
+    }
+
+    .diff .good {
+      border-color: #badbcc;
+      background: #edf7f2;
+      color: var(--ok);
+      font-weight: 650;
+    }
+
+    .diff .warn {
+      border-color: #f1c6c2;
+      background: #fff1f0;
+      color: var(--bad);
+      font-weight: 650;
     }
 
     .identity {
@@ -361,6 +408,45 @@
       white-space: nowrap;
     }
 
+    .qr-screen[hidden] {
+      display: none;
+    }
+
+    .qr-screen {
+      min-height: calc(100vh - 148px);
+      background: white;
+    }
+
+    .qr-body {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto auto;
+      gap: 10px;
+      justify-items: center;
+      min-height: calc(100vh - 198px);
+      padding: 14px;
+    }
+
+    #qrCanvas {
+      width: min(100%, calc(100vh - 300px), 760px);
+      height: auto;
+      aspect-ratio: 1;
+      align-self: center;
+      justify-self: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    #qrURL {
+      width: 100%;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      color: var(--text);
+      font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -414,6 +500,18 @@
       .identity {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .qr-screen {
+        min-height: calc(100vh - 188px);
+      }
+
+      .qr-body {
+        min-height: calc(100vh - 238px);
+      }
+
+      #qrCanvas {
+        width: min(100%, calc(100vh - 340px), 620px);
+      }
     }
 
     @media (max-width: 560px) {
@@ -440,6 +538,19 @@
 
       .metric .value {
         font-size: 25px;
+      }
+
+      .qr-screen {
+        min-height: calc(100vh - 190px);
+      }
+
+      .qr-body {
+        min-height: calc(100vh - 240px);
+        padding: 10px;
+      }
+
+      #qrCanvas {
+        width: min(100%, calc(100vh - 330px));
       }
     }
   </style>
@@ -471,40 +582,55 @@
       <button id="clear" class="button secondary" type="button">クリア</button>
       <button id="exportCSV" class="button secondary" type="button">CSV出力</button>
       <button id="importCSV" class="button secondary" type="button">CSV読込</button>
+      <button id="showQR" class="button secondary" type="button" disabled aria-pressed="false">QR表示</button>
+      <button id="privacyMode" class="button secondary" type="button" aria-pressed="false">プライバシーモード</button>
       <input id="importFile" type="file" accept=".csv,text/csv" hidden>
     </section>
 
-    <section class="grid">
+    <section id="mainGrid" class="grid">
       <div class="panel">
-        <div class="panel-head">
-          <h2>測定値</h2>
-          <span id="measuredAt" class="timestamp">--</span>
+        <div id="measurementView">
+          <div class="panel-head">
+            <h2>測定値</h2>
+            <span id="measuredAt" class="timestamp">--</span>
+          </div>
+          <div class="identity">
+            <div><span>ID</span><strong id="id">--</strong></div>
+            <div><span>体型</span><strong id="bodyType">--</strong></div>
+            <div><span>性別</span><strong id="sex">--</strong></div>
+            <div><span>状態</span><strong id="status">--</strong></div>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div><div id="weightKgDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">体脂肪率</div><div class="value"><span id="bodyFatPercent">--</span><span class="unit">%</span></div><div id="bodyFatPercentDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">筋肉量</div><div class="value"><span id="muscleMassKg">--</span><span class="unit">kg</span></div><div id="muscleMassKgDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">脂肪量</div><div class="value"><span id="fatMassKg">--</span><span class="unit">kg</span></div></div>
+            <div class="metric"><div class="label">BMI</div><div class="value"><span id="bmi">--</span></div></div>
+            <div class="metric"><div class="label">内臓脂肪レベル</div><div class="value"><span id="visceralFatLevel">--</span></div><div id="visceralFatLevelDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
+            <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
+            <div class="metric"><div class="label">SMI</div><div class="value"><span id="appendicularSkeletalMuscleMassHeightSquared">--</span></div><div id="smiDiff" class="diff"></div></div>
+          </div>
+          <div class="panel-head">
+            <h2>部位別</h2>
+            <span class="timestamp">脂肪率 / 筋肉量</span>
+          </div>
+          <div id="segments" class="segments"></div>
         </div>
-        <div class="identity">
-          <div><span>ID</span><strong id="id">--</strong></div>
-          <div><span>体型</span><strong id="bodyType">--</strong></div>
-          <div><span>性別</span><strong id="sex">--</strong></div>
-          <div><span>状態</span><strong id="status">--</strong></div>
+        <div id="qrView" class="qr-screen" hidden>
+          <div class="panel-head">
+            <h2>QRコード</h2>
+            <span id="qrMeasuredAt" class="timestamp">--</span>
+          </div>
+          <div class="qr-body">
+            <canvas id="qrCanvas" width="420" height="420"></canvas>
+            <a id="qrLink" class="button" target="_blank" rel="noopener">user.htmlを開く</a>
+            <textarea id="qrURL" readonly rows="3"></textarea>
+          </div>
         </div>
-        <div class="metrics">
-          <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div></div>
-          <div class="metric"><div class="label">体脂肪率</div><div class="value"><span id="bodyFatPercent">--</span><span class="unit">%</span></div></div>
-          <div class="metric"><div class="label">筋肉量</div><div class="value"><span id="muscleMassKg">--</span><span class="unit">kg</span></div></div>
-          <div class="metric"><div class="label">脂肪量</div><div class="value"><span id="fatMassKg">--</span><span class="unit">kg</span></div></div>
-          <div class="metric"><div class="label">BMI</div><div class="value"><span id="bmi">--</span></div></div>
-          <div class="metric"><div class="label">内臓脂肪レベル</div><div class="value"><span id="visceralFatLevel">--</span></div></div>
-          <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
-          <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
-          <div class="metric"><div class="label">SMI</div><div class="value"><span id="appendicularSkeletalMuscleMassHeightSquared">--</span></div></div>
-        </div>
-        <div class="panel-head">
-          <h2>部位別</h2>
-          <span class="timestamp">脂肪率 / 筋肉量</span>
-        </div>
-        <div id="segments" class="segments"></div>
       </div>
 
-      <div class="panel">
+      <div id="detailPanel" class="panel">
         <div class="panel-head">
           <h2>保存履歴</h2>
           <button id="refreshHistory" class="button secondary compact" type="button">更新</button>
@@ -533,6 +659,7 @@
 
   <script type="module">
     import { MC780A } from "./MC780A.js";
+    import QRCode from "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm";
 
     const BODY_TYPE_LABELS = { standard: "スタンダード", athlete: "アスリート", auto: "自動" };
     const SEX_LABELS = { male: "男性", female: "女性" };
@@ -590,16 +717,17 @@
     };
 
     const els = Object.fromEntries([
-      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "baud", "clear",
+      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "baud", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
       "measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent",
-      "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent",
+      "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent",
       "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared",
-      "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory",
+      "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt",
     ].map((id) => [id, document.getElementById(id)]));
 
     const DB_NAME = "mc780a-monitor";
     const DB_VERSION = 1;
     const STORE_NAME = "measurements";
+    const USER_APP_URL = "https://code4fukui.github.io/bodychecker/user.html";
 
     let port;
     let reader;
@@ -608,6 +736,9 @@
     let receivedCount = 0;
     let dbPromise;
     let selectedHistoryId = null;
+    let currentRecord = null;
+    let qrMode = false;
+    let privacyMode = false;
 
     function openDatabase() {
       if (dbPromise) return dbPromise;
@@ -649,6 +780,20 @@
       });
     }
 
+    function normalizeEntry(entry) {
+      const record = entry.record;
+      const fields = record?.fields ?? {};
+      return {
+        savedAt: entry.savedAt || new Date().toISOString(),
+        measuredAt: entry.measuredAt ?? fields.measuredAt ?? null,
+        subjectId: entry.subjectId ?? fields.id ?? null,
+        model: entry.model ?? record?.model ?? fields.model ?? null,
+        weightKg: entry.weightKg ?? fields.weightKg ?? null,
+        bodyFatPercent: entry.bodyFatPercent ?? fields.bodyFatPercent ?? null,
+        record,
+      };
+    }
+
     async function saveMeasurement(record) {
       const savedAt = new Date().toISOString();
       const fields = record.fields;
@@ -666,6 +811,15 @@
       });
       entry.id = id;
       return entry;
+    }
+
+    async function importMeasurements(entries) {
+      const normalized = entries.map(normalizeEntry).filter((entry) => entry.record?.fields);
+      if (!normalized.length) return 0;
+      await withStore("readwrite", (store) => {
+        return Promise.all(normalized.map((entry) => requestToPromise(store.add(entry))));
+      });
+      return normalized.length;
     }
 
     async function listMeasurements() {
@@ -712,6 +866,178 @@
       });
     }
 
+    function csvEscape(value) {
+      if (value == null) return "";
+      const text = String(value);
+      if (/[",\r\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
+      return text;
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let quoted = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (quoted) {
+          if (char === '"' && text[i + 1] === '"') {
+            value += '"';
+            i++;
+          } else if (char === '"') {
+            quoted = false;
+          } else {
+            value += char;
+          }
+        } else if (char === '"') {
+          quoted = true;
+        } else if (char === ",") {
+          row.push(value);
+          value = "";
+        } else if (char === "\n") {
+          row.push(value);
+          rows.push(row);
+          row = [];
+          value = "";
+        } else if (char !== "\r") {
+          value += char;
+        }
+      }
+      if (value.length || row.length) {
+        row.push(value);
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function csvToEntries(text) {
+      const rows = parseCSV(text).filter((row) => row.some((value) => value !== ""));
+      if (!rows.length) return [];
+      const headers = rows[0];
+      return rows.slice(1).map((row) => {
+        const data = Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]));
+        if (!data.recordJson) throw new Error("recordJson列がありません");
+        const record = JSON.parse(data.recordJson);
+        return {
+          savedAt: data.savedAt || undefined,
+          measuredAt: data.measuredAt || undefined,
+          subjectId: data.subjectId || undefined,
+          model: data.model || undefined,
+          weightKg: data.weightKg === "" ? undefined : Number(data.weightKg),
+          bodyFatPercent: data.bodyFatPercent === "" ? undefined : Number(data.bodyFatPercent),
+          record,
+        };
+      });
+    }
+
+    function entriesToCSV(entries) {
+      const headers = ["savedAt", "measuredAt", "subjectId", "model", "weightKg", "bodyFatPercent", "recordJson"];
+      const lines = [headers.join(",")];
+      for (const entry of entries) {
+        const row = [
+          entry.savedAt,
+          entry.measuredAt,
+          entry.subjectId,
+          entry.model,
+          entry.weightKg,
+          entry.bodyFatPercent,
+          JSON.stringify(entry.record),
+        ];
+        lines.push(row.map(csvEscape).join(","));
+      }
+      return `${lines.join("\r\n")}\r\n`;
+    }
+
+    function downloadText(filename, text, type) {
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function encodePayload(data) {
+      const bytes = new TextEncoder().encode(JSON.stringify(data));
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+    }
+
+    function compactRecord(record) {
+      const fields = record.fields ?? {};
+      const pick = [
+        "id", "measuredAt", "date", "time", "sex", "age", "heightCm", "weightKg",
+        "bodyFatPercent", "fatMassKg", "fatFreeMassKg", "muscleMassKg", "bmi",
+        "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal",
+        "appendicularSkeletalMuscleMassHeightSquared", "appendicularSkeletalMuscleMassKg",
+        "standardWeightKg", "standardBodyFatPercent", "standardMuscleMassKg",
+        "rightLegBodyFatPercent", "rightLegMuscleMassKg", "leftLegBodyFatPercent", "leftLegMuscleMassKg",
+        "rightArmBodyFatPercent", "rightArmMuscleMassKg", "leftArmBodyFatPercent", "leftArmMuscleMassKg",
+        "trunkBodyFatPercent", "trunkMuscleMassKg",
+      ];
+      const data = { v: 1, savedAt: new Date().toISOString() };
+      for (const key of pick) {
+        if (fields[key] != null) data[key] = fields[key];
+      }
+      return data;
+    }
+
+    function userURL(record) {
+      const url = new URL(USER_APP_URL);
+      url.search = encodePayload(compactRecord(record));
+      return url.href;
+    }
+
+    async function updateQR() {
+      if (!currentRecord) return;
+      const url = userURL(currentRecord);
+      els.qrURL.value = url;
+      els.qrLink.href = url;
+      els.qrMeasuredAt.textContent = currentRecord.fields?.measuredAt ?? "--";
+      await QRCode.toCanvas(els.qrCanvas, url, {
+        width: 900,
+        margin: 2,
+        errorCorrectionLevel: "M",
+      });
+    }
+
+    async function setQRMode(enabled) {
+      qrMode = enabled && Boolean(currentRecord);
+      els.measurementView.hidden = qrMode;
+      els.qrView.hidden = !qrMode;
+      els.detailPanel.hidden = qrMode;
+      els.mainGrid.classList.toggle("qr-mode", qrMode);
+      els.showQR.setAttribute("aria-pressed", String(qrMode));
+      els.showQR.textContent = qrMode ? "測定値表示" : "QR表示";
+      if (qrMode) await updateQR();
+    }
+
+    function toggleQRMode() {
+      setQRMode(!qrMode);
+    }
+
+    function setPrivacyMode(enabled) {
+      privacyMode = enabled;
+      els.privacyMode.setAttribute("aria-pressed", String(privacyMode));
+      els.privacyMode.textContent = privacyMode ? "プライバシーモード: ON" : "プライバシーモード";
+      els.privacyMode.classList.toggle("secondary", !privacyMode);
+      if (privacyMode) {
+        selectedHistoryId = null;
+        renderHistory();
+        appendLog("プライバシーモードON: 以後の測定は保存しません");
+      } else {
+        appendLog("プライバシーモードOFF: 以後の測定を保存します");
+      }
+    }
+
+    function togglePrivacyMode() {
+      setPrivacyMode(!privacyMode);
+    }
+
     function setState(state, text) {
       els.stateDot.className = `dot ${state}`;
       els.stateText.textContent = text;
@@ -719,6 +1045,63 @@
 
     function setText(id, value, mapper) {
       els[id].textContent = mapper ? mapper(value) : formatValue(value);
+    }
+
+    function signedValue(value, unit = "") {
+      if (value == null || Number.isNaN(value)) return "--";
+      const rounded = Math.round(value * 10) / 10;
+      const sign = rounded > 0 ? "+" : "";
+      return `${sign}${rounded}${unit}`;
+    }
+
+    function setDiff(id, current, baseline, unit = "") {
+      const target = els[id];
+      target.textContent = "";
+      if (current == null || baseline == null) return;
+      const base = document.createElement("span");
+      const delta = document.createElement("span");
+      base.textContent = `基準 ${formatValue(baseline)}${unit}`;
+      delta.className = "delta";
+      delta.textContent = `差分 ${signedValue(current - baseline, unit)}`;
+      target.append(base, delta);
+    }
+
+    function setRangeDiff(id, current, baseline, label, unit = "", delta = current - baseline, status = null) {
+      const target = els[id];
+      target.textContent = "";
+      if (current == null || baseline == null) return;
+      const base = document.createElement("span");
+      const diff = document.createElement("span");
+      base.textContent = `${label} ${formatValue(baseline)}${unit}`;
+      diff.className = "delta";
+      diff.textContent = `差分 ${signedValue(delta, unit)}`;
+      target.append(base, diff);
+      if (status) {
+        const badge = document.createElement("span");
+        badge.className = status.good ? "good" : "warn";
+        badge.textContent = status.label;
+        target.append(badge);
+      }
+    }
+
+    function setSMIDiff(fields) {
+      const smi = fields.appendicularSkeletalMuscleMassHeightSquared;
+      const threshold = fields.sex === "male" ? 7.0 : fields.sex === "female" ? 5.7 : null;
+      const status = smi == null || threshold == null ? null : {
+        good: smi >= threshold,
+        label: smi >= threshold ? "目安以上" : "低め",
+      };
+      setRangeDiff("smiDiff", smi, threshold, "低筋量目安", "", smi == null || threshold == null ? null : smi - threshold, status);
+    }
+
+    function setVisceralFatDiff(fields) {
+      const level = fields.visceralFatLevel;
+      const healthyMax = 12;
+      const status = level == null ? null : {
+        good: level <= healthyMax,
+        label: level <= healthyMax ? "範囲内" : "高め",
+      };
+      setRangeDiff("visceralFatLevelDiff", level, healthyMax, "健康範囲上限", "", level == null ? null : level - healthyMax, status);
     }
 
     function renderSegments(fields) {
@@ -733,6 +1116,7 @@
             <span>脂肪量</span><strong>${formatValue(fields[`${segment}FatMassKg`])} kg</strong>
             <span>除脂肪量</span><strong>${formatValue(fields[`${segment}FatFreeMassKg`])} kg</strong>
             <span>筋肉量</span><strong>${formatValue(fields[`${segment}MuscleMassKg`])} kg</strong>
+            <span>脂肪スコア</span><strong>${formatValue(fields[`${segment}BodyFatScore`])}</strong>
             <span>筋肉スコア</span><strong>${formatValue(fields[`${segment}MuscleScore`])}</strong>
           </div>
         `;
@@ -761,6 +1145,9 @@
 
     function render(record, options = {}) {
       const fields = record.fields;
+      currentRecord = record;
+      els.showQR.disabled = false;
+      if (qrMode) updateQR();
       if (options.incrementCount) {
         receivedCount++;
         els.count.textContent = String(receivedCount);
@@ -773,6 +1160,11 @@
       setText("weightKg", fields.weightKg);
       setText("bodyFatPercent", fields.bodyFatPercent);
       setText("muscleMassKg", fields.muscleMassKg);
+      setDiff("weightKgDiff", fields.weightKg, fields.standardWeightKg, "kg");
+      setDiff("bodyFatPercentDiff", fields.bodyFatPercent, fields.standardBodyFatPercent, "%");
+      setDiff("muscleMassKgDiff", fields.muscleMassKg, fields.standardMuscleMassKg, "kg");
+      setVisceralFatDiff(fields);
+      setSMIDiff(fields);
       setText("fatMassKg", fields.fatMassKg);
       setText("bmi", fields.bmi);
       setText("visceralFatLevel", fields.visceralFatLevel);
@@ -833,6 +1225,37 @@
       }
     }
 
+    async function exportCSV() {
+      try {
+        const entries = await listMeasurements();
+        if (!entries.length) {
+          appendLog("保存データがありません", "error");
+          return;
+        }
+        const csv = entriesToCSV(entries);
+        const stamp = new Date().toISOString().replaceAll(":", "").replace(/\.\d+Z$/, "Z");
+        downloadText(`mc780a-measurements-${stamp}.csv`, csv, "text/csv;charset=utf-8");
+        appendLog(`${entries.length}件をCSV出力しました`);
+      } catch (error) {
+        appendLog(error.message, "error");
+      }
+    }
+
+    async function importCSVFile(file) {
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const entries = csvToEntries(text);
+        const count = await importMeasurements(entries);
+        await renderHistory();
+        appendLog(`${count}件をCSVから読み込みました`);
+      } catch (error) {
+        appendLog(error.message, "error");
+      } finally {
+        els.importFile.value = "";
+      }
+    }
+
     function appendLog(line, className = "") {
       const time = new Date().toLocaleTimeString();
       const prefix = className === "error" ? "!" : ">";
@@ -854,10 +1277,15 @@
       appendLog(trimmed);
       try {
         const record = MC780A.parse(trimmed, { format: "serial" });
-        const stored = await saveMeasurement(record);
-        selectedHistoryId = stored.id;
+        if (privacyMode) {
+          selectedHistoryId = null;
+          appendLog("保存しない設定のため、この測定は履歴に残していません");
+        } else {
+          const stored = await saveMeasurement(record);
+          selectedHistoryId = stored.id;
+        }
         render(record, { incrementCount: true });
-        await renderHistory();
+        if (!privacyMode) await renderHistory();
       } catch (error) {
         appendLog(error.message, "error");
       }
@@ -927,11 +1355,17 @@
     function clearDisplay() {
       receivedCount = 0;
       selectedHistoryId = null;
+      currentRecord = null;
+      setQRMode(false);
+      els.showQR.disabled = true;
       els.count.textContent = "0";
       els.log.textContent = "";
       els.lastLength.textContent = "0 bytes";
       for (const id of ["measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared"]) {
         els[id].textContent = "--";
+      }
+      for (const id of ["weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff"]) {
+        els[id].textContent = "";
       }
       els.checksum.textContent = "CS --";
       els.fields.innerHTML = '<tr><td colspan="2" class="empty">--</td></tr>';
@@ -946,6 +1380,11 @@
     els.disconnect.addEventListener("click", disconnect);
     els.clear.addEventListener("click", clearDisplay);
     els.refreshHistory.addEventListener("click", renderHistory);
+    els.exportCSV.addEventListener("click", exportCSV);
+    els.importCSV.addEventListener("click", () => els.importFile.click());
+    els.importFile.addEventListener("change", () => importCSVFile(els.importFile.files[0]));
+    els.showQR.addEventListener("click", toggleQRMode);
+    els.privacyMode.addEventListener("click", togglePrivacyMode);
     clearDisplay();
   </script>
 </body>
