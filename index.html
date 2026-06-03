@@ -569,16 +569,6 @@
     <section class="controls">
       <button id="connect" class="button" type="button">接続</button>
       <button id="disconnect" class="button secondary" type="button" disabled>切断</button>
-      <label>
-        baud
-        <select id="baud">
-          <option value="9600" selected>9600</option>
-          <option value="19200">19200</option>
-          <option value="38400">38400</option>
-          <option value="57600">57600</option>
-          <option value="115200">115200</option>
-        </select>
-      </label>
       <button id="clear" class="button secondary" type="button">クリア</button>
       <button id="exportCSV" class="button secondary" type="button">CSV出力</button>
       <button id="importCSV" class="button secondary" type="button">CSV読込</button>
@@ -717,7 +707,7 @@
     };
 
     const els = Object.fromEntries([
-      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "baud", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
+      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
       "measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent",
       "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent",
       "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared",
@@ -1299,7 +1289,7 @@
       try {
         port = await navigator.serial.requestPort();
         await port.open({
-          baudRate: Number(els.baud.value),
+          baudRate: 9600,
           dataBits: 8,
           stopBits: 1,
           parity: "none",
@@ -1308,7 +1298,6 @@
         keepReading = true;
         els.connect.disabled = true;
         els.disconnect.disabled = false;
-        els.baud.disabled = true;
         setState("on", "接続中");
         readLoop();
       } catch (error) {
@@ -1347,7 +1336,6 @@
         port = undefined;
         els.connect.disabled = false;
         els.disconnect.disabled = true;
-        els.baud.disabled = false;
         setState("", "未接続");
       }
     }
