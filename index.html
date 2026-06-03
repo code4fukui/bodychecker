@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MC-780A Monitor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #17202a;
+      --muted: #667085;
+      --line: #d9dee7;
+      --accent: #176b87;
+      --accent-2: #f2a541;
+      --ok: #16835f;
+      --bad: #b42318;
+      --shadow: 0 12px 30px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, select {
+      font: inherit;
+    }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .statusbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #98a2b3;
+    }
+
+    .dot.on {
+      background: var(--ok);
+    }
+
+    .dot.err {
+      background: var(--bad);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+    }
+
+    .button.secondary {
+      background: white;
+      color: var(--accent);
+    }
+
+    .button.compact {
+      min-height: 32px;
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+
+    .button:disabled {
+      border-color: #c9d0dc;
+      background: #e9edf3;
+      color: #8b95a5;
+      cursor: not-allowed;
+    }
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    select {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      padding: 7px 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 50px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .timestamp {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .metric {
+      min-height: 102px;
+      padding: 13px;
+      background: white;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .metric .value {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin-top: 7px;
+      font-size: 29px;
+      font-weight: 720;
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .unit {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .identity {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .identity div {
+      min-height: 64px;
+      padding: 12px;
+      background: white;
+    }
+
+    .identity span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .identity strong {
+      display: block;
+      font-size: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .segments {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .segment {
+      min-height: 145px;
+      padding: 12px;
+      background: white;
+    }
+
+    .segment h3 {
+      margin: 0 0 9px;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 5px 8px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .kv span:nth-child(odd) {
+      color: var(--muted);
+    }
+
+    .log {
+      height: 360px;
+      overflow: auto;
+      padding: 12px;
+      background: #111827;
+      color: #e5e7eb;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .table-wrap {
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    .history-list {
+      max-height: 260px;
+      overflow: auto;
+      background: white;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      width: 100%;
+      padding: 11px 12px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .history-item:hover,
+    .history-item.active {
+      background: #eef7f8;
+    }
+
+    .history-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .history-title {
+      font-size: 14px;
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-sub {
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-value {
+      align-self: center;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 720;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f9fafb;
+      color: var(--muted);
+      font-weight: 650;
+      z-index: 1;
+    }
+
+    td:last-child {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty {
+      padding: 28px 14px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .accent {
+      color: var(--accent-2);
+    }
+
+    @media (max-width: 920px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .segments {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .identity {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        padding: 14px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .statusbar {
+        justify-content: flex-start;
+      }
+
+      .metrics, .segments, .identity {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        min-height: 88px;
+      }
+
+      .metric .value {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>MC-780A Monitor</h1>
+      <div class="statusbar">
+        <span class="pill"><span id="stateDot" class="dot"></span><span id="stateText">未接続</span></span>
+        <span class="pill">受信 <strong id="count">0</strong></span>
+        <span class="pill">保存 <strong id="historyCount">0</strong></span>
+      </div>
+    </header>
+
+    <section class="controls">
+      <button id="connect" class="button" type="button">接続</button>
+      <button id="disconnect" class="button secondary" type="button" disabled>切断</button>
+      <label>
+        baud
+        <select id="baud">
+          <option value="9600" selected>9600</option>
+          <option value="19200">19200</option>
+          <option value="38400">38400</option>
+          <option value="57600">57600</option>
+          <option value="115200">115200</option>
+        </select>
+      </label>
+      <button id="clear" class="button secondary" type="button">クリア</button>
+      <button id="exportCSV" class="button secondary" type="button">CSV出力</button>
+      <button id="importCSV" class="button secondary" type="button">CSV読込</button>
+      <input id="importFile" type="file" accept=".csv,text/csv" hidden>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>測定値</h2>
+          <span id="measuredAt" class="timestamp">--</span>
+        </div>
+        <div class="identity">
+          <div><span>ID</span><strong id="id">--</strong></div>
+          <div><span>体型</span><strong id="bodyType">--</strong></div>
+          <div><span>性別</span><strong id="sex">--</strong></div>
+          <div><span>状態</span><strong id="status">--</strong></div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div></div>
+          <div class="metric"><div class="label">体脂肪率</div><div class="value"><span id="bodyFatPercent">--</span><span class="unit">%</span></div></div>
+          <div class="metric"><div class="label">筋肉量</div><div class="value"><span id="muscleMassKg">--</span><span class="unit">kg</span></div></div>
+          <div class="metric"><div class="label">脂肪量</div><div class="value"><span id="fatMassKg">--</span><span class="unit">kg</span></div></div>
+          <div class="metric"><div class="label">BMI</div><div class="value"><span id="bmi">--</span></div></div>
+          <div class="metric"><div class="label">内臓脂肪レベル</div><div class="value"><span id="visceralFatLevel">--</span></div></div>
+          <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
+          <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
+          <div class="metric"><div class="label">SMI</div><div class="value"><span id="appendicularSkeletalMuscleMassHeightSquared">--</span></div></div>
+        </div>
+        <div class="panel-head">
+          <h2>部位別</h2>
+          <span class="timestamp">脂肪率 / 筋肉量</span>
+        </div>
+        <div id="segments" class="segments"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>保存履歴</h2>
+          <button id="refreshHistory" class="button secondary compact" type="button">更新</button>
+        </div>
+        <div id="history" class="history-list">
+          <div class="empty">--</div>
+        </div>
+        <div class="panel-head">
+          <h2>全項目</h2>
+          <span id="checksum" class="timestamp">CS --</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>項目</th><th>値</th></tr></thead>
+            <tbody id="fields"><tr><td colspan="2" class="empty">--</td></tr></tbody>
+          </table>
+        </div>
+        <div class="panel-head">
+          <h2>受信ログ</h2>
+          <span id="lastLength" class="timestamp">0 bytes</span>
+        </div>
+        <div id="log" class="log"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { MC780A } from "./MC780A.js";
+
+    const BODY_TYPE_LABELS = { standard: "スタンダード", athlete: "アスリート", auto: "自動" };
+    const SEX_LABELS = { male: "男性", female: "女性" };
+    const STATUS_LABELS = { ok: "正常", segment_error: "部位エラー" };
+
+    const SEGMENTS = [
+      ["rightLeg", "右足"],
+      ["leftLeg", "左足"],
+      ["rightArm", "右腕"],
+      ["leftArm", "左腕"],
+      ["trunk", "体幹部"],
+    ];
+
+    const FIELD_LABELS = {
+      model: "型番",
+      id: "ID",
+      cardId: "カードID",
+      status: "状態",
+      date: "日付",
+      time: "時刻",
+      measuredAt: "測定日時",
+      bodyType: "体型",
+      sex: "性別",
+      age: "年令",
+      heightCm: "身長 cm",
+      tareKg: "着衣量 kg",
+      weightKg: "体重 kg",
+      bodyFatPercent: "体脂肪率 %",
+      fatMassKg: "脂肪量 kg",
+      fatFreeMassKg: "除脂肪量 kg",
+      muscleMassKg: "筋肉量 kg",
+      muscleScore: "筋肉量スコア",
+      boneMassKg: "推定骨量 kg",
+      bodyWaterKg: "体水分量 kg",
+      bodyWaterPercent: "体水分率 %",
+      bmi: "BMI",
+      standardWeightKg: "標準体重 kg",
+      obesityDegreePercent: "肥満度 %",
+      standardBodyFatPercent: "標準体脂肪率 %",
+      visceralFatLevel: "内臓脂肪レベル",
+      legScore: "脚点",
+      basalMetabolicRateKcal: "基礎代謝量 kcal",
+      athleteIndex: "アスリート指数",
+      appendicularSkeletalMuscleMassHeightSquared: "SMI",
+      appendicularSkeletalMuscleMassKg: "四肢骨格筋量 kg",
+      checksum: "チェックサム",
+    };
+
+    const SEGMENT_LABELS = {
+      rightLeg: "右足",
+      leftLeg: "左足",
+      rightArm: "右腕",
+      leftArm: "左腕",
+      trunk: "体幹部",
+    };
+
+    const els = Object.fromEntries([
+      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "baud", "clear",
+      "measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent",
+      "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent",
+      "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared",
+      "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory",
+    ].map((id) => [id, document.getElementById(id)]));
+
+    const DB_NAME = "mc780a-monitor";
+    const DB_VERSION = 1;
+    const STORE_NAME = "measurements";
+
+    let port;
+    let reader;
+    let keepReading = false;
+    let lineBuffer = "";
+    let receivedCount = 0;
+    let dbPromise;
+    let selectedHistoryId = null;
+
+    function openDatabase() {
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          const store = db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+          store.createIndex("savedAt", "savedAt");
+          store.createIndex("measuredAt", "measuredAt");
+          store.createIndex("subjectId", "subjectId");
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return dbPromise;
+    }
+
+    async function withStore(mode, callback) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, mode);
+        const store = transaction.objectStore(STORE_NAME);
+        let result;
+        transaction.oncomplete = () => resolve(result);
+        transaction.onerror = () => reject(transaction.error);
+        try {
+          result = callback(store);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+
+    function requestToPromise(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function saveMeasurement(record) {
+      const savedAt = new Date().toISOString();
+      const fields = record.fields;
+      const entry = {
+        savedAt,
+        measuredAt: fields.measuredAt ?? null,
+        subjectId: fields.id ?? null,
+        model: record.model ?? fields.model ?? null,
+        weightKg: fields.weightKg ?? null,
+        bodyFatPercent: fields.bodyFatPercent ?? null,
+        record,
+      };
+      const id = await withStore("readwrite", (store) => {
+        return requestToPromise(store.add(entry));
+      });
+      entry.id = id;
+      return entry;
+    }
+
+    async function listMeasurements() {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, "readonly");
+        const index = transaction.objectStore(STORE_NAME).index("savedAt");
+        const request = index.openCursor(null, "prev");
+        const entries = [];
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) {
+            resolve(entries);
+            return;
+          }
+          entries.push(cursor.value);
+          cursor.continue();
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function getMeasurement(id) {
+      return withStore("readonly", (store) => requestToPromise(store.get(id)));
+    }
+
+    function formatValue(value) {
+      if (value == null || value === "") return "--";
+      if (typeof value === "number") return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
+      return String(value);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "--";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("ja-JP", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    }
+
+    function setState(state, text) {
+      els.stateDot.className = `dot ${state}`;
+      els.stateText.textContent = text;
+    }
+
+    function setText(id, value, mapper) {
+      els[id].textContent = mapper ? mapper(value) : formatValue(value);
+    }
+
+    function renderSegments(fields) {
+      els.segments.textContent = "";
+      for (const [segment] of SEGMENTS) {
+        const div = document.createElement("div");
+        div.className = "segment";
+        div.innerHTML = `
+          <h3>${SEGMENT_LABELS[segment]}</h3>
+          <div class="kv">
+            <span>脂肪率</span><strong>${formatValue(fields[`${segment}BodyFatPercent`])}%</strong>
+            <span>脂肪量</span><strong>${formatValue(fields[`${segment}FatMassKg`])} kg</strong>
+            <span>除脂肪量</span><strong>${formatValue(fields[`${segment}FatFreeMassKg`])} kg</strong>
+            <span>筋肉量</span><strong>${formatValue(fields[`${segment}MuscleMassKg`])} kg</strong>
+            <span>筋肉スコア</span><strong>${formatValue(fields[`${segment}MuscleScore`])}</strong>
+          </div>
+        `;
+        els.segments.append(div);
+      }
+    }
+
+    function renderFields(fields) {
+      els.fields.textContent = "";
+      const entries = Object.entries(fields)
+        .filter(([key, value]) => value != null && !key.endsWith("Code") && key !== "unknown")
+        .sort(([a], [b]) => (FIELD_LABELS[a] ?? a).localeCompare(FIELD_LABELS[b] ?? b, "ja"));
+      for (const [key, value] of entries) {
+        const row = document.createElement("tr");
+        const label = document.createElement("td");
+        const val = document.createElement("td");
+        label.textContent = FIELD_LABELS[key] ?? key;
+        val.textContent = formatValue(value);
+        row.append(label, val);
+        els.fields.append(row);
+      }
+      if (!entries.length) {
+        els.fields.innerHTML = '<tr><td colspan="2" class="empty">--</td></tr>';
+      }
+    }
+
+    function render(record, options = {}) {
+      const fields = record.fields;
+      if (options.incrementCount) {
+        receivedCount++;
+        els.count.textContent = String(receivedCount);
+      }
+      els.measuredAt.textContent = fields.measuredAt ?? "--";
+      setText("id", fields.id);
+      setText("bodyType", fields.bodyType, (value) => BODY_TYPE_LABELS[value] ?? formatValue(value));
+      setText("sex", fields.sex, (value) => SEX_LABELS[value] ?? formatValue(value));
+      setText("status", fields.status, (value) => STATUS_LABELS[value] ?? formatValue(value));
+      setText("weightKg", fields.weightKg);
+      setText("bodyFatPercent", fields.bodyFatPercent);
+      setText("muscleMassKg", fields.muscleMassKg);
+      setText("fatMassKg", fields.fatMassKg);
+      setText("bmi", fields.bmi);
+      setText("visceralFatLevel", fields.visceralFatLevel);
+      setText("bodyWaterPercent", fields.bodyWaterPercent);
+      setText("basalMetabolicRateKcal", fields.basalMetabolicRateKcal);
+      setText("appendicularSkeletalMuscleMassHeightSquared", fields.appendicularSkeletalMuscleMassHeightSquared);
+      els.checksum.textContent = `CS ${fields.checksum ?? "--"}`;
+      els.lastLength.textContent = `${new Blob([record.raw]).size} bytes`;
+      renderSegments(fields);
+      renderFields(fields);
+    }
+
+    async function renderHistory() {
+      let entries;
+      try {
+        entries = await listMeasurements();
+      } catch (error) {
+        els.history.innerHTML = '<div class="empty">保存履歴を読めません</div>';
+        appendLog(error.message, "error");
+        return;
+      }
+
+      els.historyCount.textContent = String(entries.length);
+      els.history.textContent = "";
+      if (!entries.length) {
+        els.history.innerHTML = '<div class="empty">--</div>';
+        return;
+      }
+
+      for (const entry of entries) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `history-item${entry.id === selectedHistoryId ? " active" : ""}`;
+        const title = `${formatDateTime(entry.savedAt)} 保存`;
+        const measured = entry.measuredAt ? `測定 ${entry.measuredAt.replace("T", " ")}` : "測定日時 --";
+        const subject = entry.subjectId ? `ID ${entry.subjectId}` : "ID --";
+        const main = document.createElement("span");
+        const titleNode = document.createElement("span");
+        const sub = document.createElement("span");
+        const value = document.createElement("span");
+        main.className = "history-main";
+        titleNode.className = "history-title";
+        sub.className = "history-sub";
+        value.className = "history-value";
+        titleNode.textContent = title;
+        sub.textContent = `${subject} / ${measured}`;
+        value.textContent = `${formatValue(entry.weightKg)} kg`;
+        main.append(titleNode, sub);
+        button.append(main, value);
+        button.addEventListener("click", async () => {
+          const stored = await getMeasurement(entry.id);
+          if (!stored) return;
+          selectedHistoryId = stored.id;
+          render(stored.record);
+          renderHistory();
+        });
+        els.history.append(button);
+      }
+    }
+
+    function appendLog(line, className = "") {
+      const time = new Date().toLocaleTimeString();
+      const prefix = className === "error" ? "!" : ">";
+      els.log.textContent = `${time} ${prefix} ${line}\n${els.log.textContent}`.slice(0, 20000);
+    }
+
+    function handleChunk(text) {
+      lineBuffer += text;
+      const lines = lineBuffer.split(/\r?\n/);
+      lineBuffer = lines.pop() ?? "";
+      for (const line of lines) {
+        handleLine(line);
+      }
+    }
+
+    async function handleLine(line) {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      appendLog(trimmed);
+      try {
+        const record = MC780A.parse(trimmed, { format: "serial" });
+        const stored = await saveMeasurement(record);
+        selectedHistoryId = stored.id;
+        render(record, { incrementCount: true });
+        await renderHistory();
+      } catch (error) {
+        appendLog(error.message, "error");
+      }
+    }
+
+    async function connect() {
+      if (!("serial" in navigator)) {
+        setState("err", "Web Serial 非対応");
+        return;
+      }
+      try {
+        port = await navigator.serial.requestPort();
+        await port.open({
+          baudRate: Number(els.baud.value),
+          dataBits: 8,
+          stopBits: 1,
+          parity: "none",
+          flowControl: "none",
+        });
+        keepReading = true;
+        els.connect.disabled = true;
+        els.disconnect.disabled = false;
+        els.baud.disabled = true;
+        setState("on", "接続中");
+        readLoop();
+      } catch (error) {
+        setState("err", "接続失敗");
+        appendLog(error.message, "error");
+      }
+    }
+
+    async function readLoop() {
+      const decoder = new TextDecoder();
+      while (port?.readable && keepReading) {
+        reader = port.readable.getReader();
+        try {
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done || !keepReading) break;
+            if (value) handleChunk(decoder.decode(value, { stream: true }));
+          }
+        } catch (error) {
+          appendLog(error.message, "error");
+        } finally {
+          reader.releaseLock();
+          reader = undefined;
+        }
+      }
+    }
+
+    async function disconnect() {
+      keepReading = false;
+      try {
+        await reader?.cancel();
+        await port?.close();
+      } catch (error) {
+        appendLog(error.message, "error");
+      } finally {
+        port = undefined;
+        els.connect.disabled = false;
+        els.disconnect.disabled = true;
+        els.baud.disabled = false;
+        setState("", "未接続");
+      }
+    }
+
+    function clearDisplay() {
+      receivedCount = 0;
+      selectedHistoryId = null;
+      els.count.textContent = "0";
+      els.log.textContent = "";
+      els.lastLength.textContent = "0 bytes";
+      for (const id of ["measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared"]) {
+        els[id].textContent = "--";
+      }
+      els.checksum.textContent = "CS --";
+      els.fields.innerHTML = '<tr><td colspan="2" class="empty">--</td></tr>';
+      els.segments.textContent = "";
+      renderHistory();
+    }
+
+    navigator.serial?.addEventListener("disconnect", () => {
+      disconnect();
+    });
+    els.connect.addEventListener("click", connect);
+    els.disconnect.addEventListener("click", disconnect);
+    els.clear.addEventListener("click", clearDisplay);
+    els.refreshHistory.addEventListener("click", renderHistory);
+    clearDisplay();
+  </script>
+</body>
+</html>
