@@ -889,6 +889,10 @@
       return String(value);
     }
 
+    function formatPhaseAngle(value) {
+      return typeof value === "number" ? formatValue(Math.abs(value)) : formatValue(value);
+    }
+
     function formatWeightRatio(value, weightKg) {
       if (value == null || weightKg == null || weightKg <= 0) return "";
       return `（体重比 ${Math.round(value / weightKg * 1000) / 10}%）`;
@@ -1172,7 +1176,7 @@
             <span>脂肪量</span><strong>${formatValue(fields[`${segment}FatMassKg`])} kg</strong>
             <span>除脂肪量</span><strong>${formatValue(fields[`${segment}FatFreeMassKg`])} kg</strong>
             <span>筋肉量</span><strong>${formatValue(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}${formatLeftRightRatio(fields, segment)}</strong>
-            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatValue(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
+            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
             <span>脂肪スコア</span><strong>${formatValue(fields[`${segment}BodyFatScore`])}</strong>
             <span>筋肉スコア</span><strong>${formatValue(fields[`${segment}MuscleScore`])}</strong>
           </div>
@@ -1191,7 +1195,7 @@
         const label = document.createElement("td");
         const val = document.createElement("td");
         label.textContent = FIELD_LABELS[key] ?? key;
-        val.textContent = formatValue(value);
+        val.textContent = key.includes("PhaseAngle") ? formatPhaseAngle(value) : formatValue(value);
         row.append(label, val);
         els.fields.append(row);
       }
@@ -1228,7 +1232,7 @@
       setText("bodyWaterPercent", fields.bodyWaterPercent);
       setText("basalMetabolicRateKcal", fields.basalMetabolicRateKcal);
       setText("appendicularSkeletalMuscleMassHeightSquared", fields.appendicularSkeletalMuscleMassHeightSquared);
-      setText("wholeBodyPhaseAngle50kHz", fields.wholeBodyPhaseAngle50kHz);
+      setText("wholeBodyPhaseAngle50kHz", fields.wholeBodyPhaseAngle50kHz, formatPhaseAngle);
       els.checksum.textContent = `CS ${fields.checksum ?? "--"}`;
       els.lastLength.textContent = `${new Blob([record.raw]).size} bytes`;
       renderSegments(fields);

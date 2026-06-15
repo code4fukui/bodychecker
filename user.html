@@ -400,6 +400,10 @@
       return String(value);
     }
 
+    function formatPhaseAngle(value) {
+      return typeof value === "number" ? formatValue(Math.abs(value)) : formatValue(value);
+    }
+
     function formatWeightRatio(value, weightKg) {
       if (value == null || weightKg == null || weightKg <= 0) return "";
       return `（体重比 ${Math.round(value / weightKg * 1000) / 10}%）`;
@@ -464,7 +468,7 @@
           <div class="kv">
             <span>脂肪率</span><strong>${formatValue(record[`${segment}BodyFatPercent`])}%</strong>
             <span>筋肉量</span><strong>${formatValue(record[`${segment}MuscleMassKg`])} kg${formatWeightRatio(record[`${segment}MuscleMassKg`], record.weightKg)}${formatLeftRightRatio(record, segment)}</strong>
-            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatValue(record[`${segment}PhaseAngle50kHz`])}°</strong>`}
+            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(record[`${segment}PhaseAngle50kHz`])}°</strong>`}
           </div>
         `;
         els.segments.append(div);
@@ -484,7 +488,7 @@
       setText("bodyWaterPercent", record.bodyWaterPercent);
       setText("basalMetabolicRateKcal", record.basalMetabolicRateKcal);
       setText("asm", record.appendicularSkeletalMuscleMassKg);
-      setText("wholeBodyPhaseAngle50kHz", record.wholeBodyPhaseAngle50kHz);
+      els.wholeBodyPhaseAngle50kHz.textContent = formatPhaseAngle(record.wholeBodyPhaseAngle50kHz);
       setDiff("weightDiff", record.weightKg, record.standardWeightKg, "kg");
       setDiff("bodyFatDiff", record.bodyFatPercent, record.standardBodyFatPercent, "%");
       setDiff("muscleDiff", record.muscleMassKg, record.standardMuscleMassKg, "kg");
