@@ -628,10 +628,11 @@
             <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
             <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
             <div class="metric"><div class="label">SMI</div><div class="value"><span id="appendicularSkeletalMuscleMassHeightSquared">--</span></div><div id="smiDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">位相角（全身・50kHz）</div><div class="value"><span id="wholeBodyPhaseAngle50kHz">--</span><span class="unit">°</span></div></div>
           </div>
           <div class="panel-head">
             <h2>部位別</h2>
-            <span class="timestamp">脂肪率 / 筋肉量</span>
+            <span class="timestamp">脂肪率 / 筋肉量 / 位相角</span>
           </div>
           <div id="segments" class="segments"></div>
         </div>
@@ -728,6 +729,7 @@
       athleteIndex: "アスリート指数",
       appendicularSkeletalMuscleMassHeightSquared: "SMI",
       appendicularSkeletalMuscleMassKg: "四肢骨格筋量 kg",
+      wholeBodyPhaseAngle50kHz: "全身位相角（50kHz）°",
       checksum: "チェックサム",
     };
 
@@ -743,7 +745,7 @@
       "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
       "measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent",
       "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent",
-      "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared",
+      "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz",
       "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt",
     ].map((id) => [id, document.getElementById(id)]));
 
@@ -887,6 +889,22 @@
       return String(value);
     }
 
+    function formatWeightRatio(value, weightKg) {
+      if (value == null || weightKg == null || weightKg <= 0) return "";
+      return `（体重比 ${Math.round(value / weightKg * 1000) / 10}%）`;
+    }
+
+    function formatLeftRightRatio(fields, segment) {
+      const pair = segment.endsWith("Leg") ? ["rightLeg", "leftLeg"]
+        : segment.endsWith("Arm") ? ["rightArm", "leftArm"]
+        : null;
+      if (!pair) return "";
+      const value = fields[`${segment}MuscleMassKg`];
+      const total = pair.reduce((sum, side) => sum + fields[`${side}MuscleMassKg`], 0);
+      if (value == null || pair.some((side) => fields[`${side}MuscleMassKg`] == null) || total <= 0) return "";
+      return `（左右比 ${Math.round(value / total * 1000) / 10}%）`;
+    }
+
     function formatDateTime(value) {
       if (!value) return "--";
       const date = new Date(value);
@@ -1012,7 +1030,9 @@
         "standardWeightKg", "standardBodyFatPercent", "standardMuscleMassKg",
         "rightLegBodyFatPercent", "rightLegMuscleMassKg", "leftLegBodyFatPercent", "leftLegMuscleMassKg",
         "rightArmBodyFatPercent", "rightArmMuscleMassKg", "leftArmBodyFatPercent", "leftArmMuscleMassKg",
-        "trunkBodyFatPercent", "trunkMuscleMassKg",
+        "trunkBodyFatPercent", "trunkMuscleMassKg", "wholeBodyPhaseAngle50kHz",
+        "rightLegPhaseAngle50kHz", "leftLegPhaseAngle50kHz",
+        "rightArmPhaseAngle50kHz", "leftArmPhaseAngle50kHz",
       ];
       const data = { v: 1, savedAt: new Date().toISOString() };
       for (const key of pick) {
@@ -1151,7 +1171,8 @@
             <span>脂肪率</span><strong>${formatValue(fields[`${segment}BodyFatPercent`])}%</strong>
             <span>脂肪量</span><strong>${formatValue(fields[`${segment}FatMassKg`])} kg</strong>
             <span>除脂肪量</span><strong>${formatValue(fields[`${segment}FatFreeMassKg`])} kg</strong>
-            <span>筋肉量</span><strong>${formatValue(fields[`${segment}MuscleMassKg`])} kg</strong>
+            <span>筋肉量</span><strong>${formatValue(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}${formatLeftRightRatio(fields, segment)}</strong>
+            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatValue(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
             <span>脂肪スコア</span><strong>${formatValue(fields[`${segment}BodyFatScore`])}</strong>
             <span>筋肉スコア</span><strong>${formatValue(fields[`${segment}MuscleScore`])}</strong>
           </div>
@@ -1207,6 +1228,7 @@
       setText("bodyWaterPercent", fields.bodyWaterPercent);
       setText("basalMetabolicRateKcal", fields.basalMetabolicRateKcal);
       setText("appendicularSkeletalMuscleMassHeightSquared", fields.appendicularSkeletalMuscleMassHeightSquared);
+      setText("wholeBodyPhaseAngle50kHz", fields.wholeBodyPhaseAngle50kHz);
       els.checksum.textContent = `CS ${fields.checksum ?? "--"}`;
       els.lastLength.textContent = `${new Blob([record.raw]).size} bytes`;
       renderSegments(fields);
@@ -1218,7 +1240,7 @@
       currentRecord = null;
       setQRMode(false);
       els.showQR.disabled = true;
-      for (const id of ["measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared"]) {
+      for (const id of ["measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz"]) {
         els[id].textContent = "--";
       }
       for (const id of ["weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff"]) {

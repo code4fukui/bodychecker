@@ -337,10 +337,11 @@
           <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
           <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
           <div class="metric"><div class="label">四肢骨格筋量</div><div class="value"><span id="asm">--</span><span class="unit">kg</span></div></div>
+          <div class="metric"><div class="label">位相角（全身・50kHz）</div><div class="value"><span id="wholeBodyPhaseAngle50kHz">--</span><span class="unit">°</span></div></div>
         </div>
         <div class="panel-head">
           <h2>部位別</h2>
-          <span class="pill">脂肪率 / 筋肉量</span>
+          <span class="pill">脂肪率 / 筋肉量 / 位相角</span>
         </div>
         <div id="segments" class="segments"></div>
       </div>
@@ -360,7 +361,7 @@
       "count", "message", "records", "measuredAt", "weightKg", "bodyFatPercent",
       "muscleMassKg", "bmi", "visceralFatLevel", "smi", "bodyWaterPercent",
       "basalMetabolicRateKcal", "asm", "weightDiff", "bodyFatDiff", "muscleDiff",
-      "visceralDiff", "smiDiff", "segments",
+      "wholeBodyPhaseAngle50kHz", "visceralDiff", "smiDiff", "segments",
     ].map((id) => [id, document.getElementById(id)]));
     let selectedKey = null;
 
@@ -397,6 +398,22 @@
       if (value == null || value === "") return "--";
       if (typeof value === "number") return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
       return String(value);
+    }
+
+    function formatWeightRatio(value, weightKg) {
+      if (value == null || weightKg == null || weightKg <= 0) return "";
+      return `（体重比 ${Math.round(value / weightKg * 1000) / 10}%）`;
+    }
+
+    function formatLeftRightRatio(record, segment) {
+      const pair = segment.endsWith("Leg") ? ["rightLeg", "leftLeg"]
+        : segment.endsWith("Arm") ? ["rightArm", "leftArm"]
+        : null;
+      if (!pair) return "";
+      const value = record[`${segment}MuscleMassKg`];
+      const total = pair.reduce((sum, side) => sum + record[`${side}MuscleMassKg`], 0);
+      if (value == null || pair.some((side) => record[`${side}MuscleMassKg`] == null) || total <= 0) return "";
+      return `（左右比 ${Math.round(value / total * 1000) / 10}%）`;
     }
 
     function signedValue(value, unit = "") {
@@ -446,7 +463,8 @@
           <h3>${label}</h3>
           <div class="kv">
             <span>脂肪率</span><strong>${formatValue(record[`${segment}BodyFatPercent`])}%</strong>
-            <span>筋肉量</span><strong>${formatValue(record[`${segment}MuscleMassKg`])} kg</strong>
+            <span>筋肉量</span><strong>${formatValue(record[`${segment}MuscleMassKg`])} kg${formatWeightRatio(record[`${segment}MuscleMassKg`], record.weightKg)}${formatLeftRightRatio(record, segment)}</strong>
+            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatValue(record[`${segment}PhaseAngle50kHz`])}°</strong>`}
           </div>
         `;
         els.segments.append(div);
@@ -466,6 +484,7 @@
       setText("bodyWaterPercent", record.bodyWaterPercent);
       setText("basalMetabolicRateKcal", record.basalMetabolicRateKcal);
       setText("asm", record.appendicularSkeletalMuscleMassKg);
+      setText("wholeBodyPhaseAngle50kHz", record.wholeBodyPhaseAngle50kHz);
       setDiff("weightDiff", record.weightKg, record.standardWeightKg, "kg");
       setDiff("bodyFatDiff", record.bodyFatPercent, record.standardBodyFatPercent, "%");
       setDiff("muscleDiff", record.muscleMassKg, record.standardMuscleMassKg, "kg");
