@@ -457,7 +457,7 @@
     }
 
     #qrCanvas {
-      width: min(100%, calc(100vh - 300px), 760px);
+      width: min(100%, calc(100vh - 420px), 620px);
       height: auto;
       aspect-ratio: 1;
       align-self: center;
@@ -540,7 +540,7 @@
       }
 
       #qrCanvas {
-        width: min(100%, calc(100vh - 340px), 620px);
+        width: min(100%, calc(100vh - 430px), 520px);
       }
     }
 
@@ -580,7 +580,7 @@
       }
 
       #qrCanvas {
-        width: min(100%, calc(100vh - 330px));
+        width: min(100%, calc(100vh - 410px));
       }
     }
   </style>
@@ -889,13 +889,26 @@
       return String(value);
     }
 
+    function formatDecimal(value, digits = 1) {
+      if (value == null || value === "") return "--";
+      if (typeof value !== "number") return String(value);
+      return value.toFixed(digits);
+    }
+
     function formatPhaseAngle(value) {
-      return typeof value === "number" ? formatValue(Math.abs(value)) : formatValue(value);
+      return typeof value === "number" ? formatDecimal(Math.abs(value)) : formatValue(value);
+    }
+
+    function formatFieldValue(key, value) {
+      if (key.includes("PhaseAngle")) return formatPhaseAngle(value);
+      if (key === "appendicularSkeletalMuscleMassHeightSquared" || key.endsWith("HeightSquared")) return formatDecimal(value, 2);
+      if (key.endsWith("Kg") || key.endsWith("Percent") || key === "bmi" || key === "heightCm") return formatDecimal(value);
+      return formatValue(value);
     }
 
     function formatWeightRatio(value, weightKg) {
       if (value == null || weightKg == null || weightKg <= 0) return "";
-      return `（体重比 ${Math.round(value / weightKg * 1000) / 10}%）`;
+      return `（体重比 ${(value / weightKg * 100).toFixed(1)}%）`;
     }
 
     function formatLeftRightRatio(fields, segment) {
@@ -906,7 +919,7 @@
       const value = fields[`${segment}MuscleMassKg`];
       const total = pair.reduce((sum, side) => sum + fields[`${side}MuscleMassKg`], 0);
       if (value == null || pair.some((side) => fields[`${side}MuscleMassKg`] == null) || total <= 0) return "";
-      return `（左右比 ${Math.round(value / total * 1000) / 10}%）`;
+      return `（左右比 ${(value / total * 100).toFixed(1)}%）`;
     }
 
     function formatDateTime(value) {
@@ -1109,8 +1122,8 @@
 
     function signedValue(value, unit = "") {
       if (value == null || Number.isNaN(value)) return "--";
-      const rounded = Math.round(value * 10) / 10;
-      const sign = rounded > 0 ? "+" : "";
+      const rounded = value.toFixed(1);
+      const sign = Number(rounded) > 0 ? "+" : "";
       return `${sign}${rounded}${unit}`;
     }
 
@@ -1120,7 +1133,7 @@
       if (current == null || baseline == null) return;
       const base = document.createElement("span");
       const delta = document.createElement("span");
-      base.textContent = `基準 ${formatValue(baseline)}${unit}`;
+      base.textContent = `基準 ${formatDecimal(baseline)}${unit}`;
       delta.className = "delta";
       delta.textContent = `差分 ${signedValue(current - baseline, unit)}`;
       target.append(base, delta);
@@ -1172,10 +1185,10 @@
         div.innerHTML = `
           <h3>${SEGMENT_LABELS[segment]}</h3>
           <div class="kv">
-            <span>脂肪率</span><strong>${formatValue(fields[`${segment}BodyFatPercent`])}%</strong>
-            <span>脂肪量</span><strong>${formatValue(fields[`${segment}FatMassKg`])} kg</strong>
-            <span>除脂肪量</span><strong>${formatValue(fields[`${segment}FatFreeMassKg`])} kg</strong>
-            <span>筋肉量</span><strong>${formatValue(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}${formatLeftRightRatio(fields, segment)}</strong>
+            <span>脂肪率</span><strong>${formatDecimal(fields[`${segment}BodyFatPercent`])}%</strong>
+            <span>脂肪量</span><strong>${formatDecimal(fields[`${segment}FatMassKg`])} kg</strong>
+            <span>除脂肪量</span><strong>${formatDecimal(fields[`${segment}FatFreeMassKg`])} kg</strong>
+            <span>筋肉量</span><strong>${formatDecimal(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}${formatLeftRightRatio(fields, segment)}</strong>
             ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
             <span>脂肪スコア</span><strong>${formatValue(fields[`${segment}BodyFatScore`])}</strong>
             <span>筋肉スコア</span><strong>${formatValue(fields[`${segment}MuscleScore`])}</strong>
@@ -1195,7 +1208,7 @@
         const label = document.createElement("td");
         const val = document.createElement("td");
         label.textContent = FIELD_LABELS[key] ?? key;
-        val.textContent = key.includes("PhaseAngle") ? formatPhaseAngle(value) : formatValue(value);
+        val.textContent = formatFieldValue(key, value);
         row.append(label, val);
         els.fields.append(row);
       }
@@ -1218,20 +1231,20 @@
       setText("bodyType", fields.bodyType, (value) => BODY_TYPE_LABELS[value] ?? formatValue(value));
       setText("sex", fields.sex, (value) => SEX_LABELS[value] ?? formatValue(value));
       setText("status", fields.status, (value) => STATUS_LABELS[value] ?? formatValue(value));
-      setText("weightKg", fields.weightKg);
-      setText("bodyFatPercent", fields.bodyFatPercent);
-      setText("muscleMassKg", fields.muscleMassKg);
+      setText("weightKg", fields.weightKg, formatDecimal);
+      setText("bodyFatPercent", fields.bodyFatPercent, formatDecimal);
+      setText("muscleMassKg", fields.muscleMassKg, formatDecimal);
       setDiff("weightKgDiff", fields.weightKg, fields.standardWeightKg, "kg");
       setDiff("bodyFatPercentDiff", fields.bodyFatPercent, fields.standardBodyFatPercent, "%");
       setDiff("muscleMassKgDiff", fields.muscleMassKg, fields.standardMuscleMassKg, "kg");
       setVisceralFatDiff(fields);
       setSMIDiff(fields);
-      setText("fatMassKg", fields.fatMassKg);
-      setText("bmi", fields.bmi);
+      setText("fatMassKg", fields.fatMassKg, formatDecimal);
+      setText("bmi", fields.bmi, formatDecimal);
       setText("visceralFatLevel", fields.visceralFatLevel);
-      setText("bodyWaterPercent", fields.bodyWaterPercent);
+      setText("bodyWaterPercent", fields.bodyWaterPercent, formatDecimal);
       setText("basalMetabolicRateKcal", fields.basalMetabolicRateKcal);
-      setText("appendicularSkeletalMuscleMassHeightSquared", fields.appendicularSkeletalMuscleMassHeightSquared);
+      setText("appendicularSkeletalMuscleMassHeightSquared", fields.appendicularSkeletalMuscleMassHeightSquared, (value) => formatDecimal(value, 2));
       setText("wholeBodyPhaseAngle50kHz", fields.wholeBodyPhaseAngle50kHz, formatPhaseAngle);
       els.checksum.textContent = `CS ${fields.checksum ?? "--"}`;
       els.lastLength.textContent = `${new Blob([record.raw]).size} bytes`;
@@ -1295,7 +1308,7 @@
         remove.className = "history-delete";
         titleNode.textContent = title;
         sub.textContent = `${subject} / ${measured}`;
-        value.textContent = `${formatValue(entry.weightKg)} kg`;
+        value.textContent = `${formatDecimal(entry.weightKg)} kg`;
         remove.textContent = "削除";
         main.append(titleNode, sub);
         button.append(main, value, remove);
