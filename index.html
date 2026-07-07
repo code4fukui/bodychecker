@@ -15,6 +15,7 @@
       --accent: #176b87;
       --accent-2: #f2a541;
       --ok: #16835f;
+      --warn: #b26a00;
       --bad: #b42318;
       --shadow: 0 12px 30px rgba(23, 32, 42, 0.08);
     }
@@ -240,6 +241,73 @@
       overflow-wrap: anywhere;
     }
 
+    .metric .value .value-good {
+      color: var(--ok);
+    }
+
+    .metric .value .value-good::after {
+      content: " 🙂";
+    }
+
+    .metric .value .value-best {
+      color: var(--ok);
+    }
+
+    .metric .value .value-best::after {
+      content: " 🏆";
+    }
+
+    .metric .value .value-bad {
+      color: var(--bad);
+    }
+
+    .metric .value .value-bad::after {
+      content: " 😞";
+    }
+
+    .metric .value .value-warn {
+      color: var(--warn);
+    }
+
+    #wholeBodyPhaseAngle50kHz.value-good::after,
+    #wholeBodyPhaseAngle50kHz.value-bad::after,
+    #bodyFatPercent.value-good::after,
+    #bodyFatPercent.value-bad::after,
+    #weightKg.value-good::after,
+    #weightKg.value-bad::after,
+    #muscleMassKg.value-good::after,
+    #muscleMassKg.value-bad::after,
+    #muscleMassKg.value-best::after {
+      content: "";
+    }
+
+    #wholeBodyPhaseAngle50kHz.value-good + .unit::after,
+    #bodyFatPercent.value-good + .unit::after,
+    #weightKg.value-good + .unit::after,
+    #muscleMassKg.value-good + .unit::after {
+      content: " 🙂";
+      color: var(--ok);
+      font-size: 29px;
+      font-weight: 720;
+    }
+
+    #wholeBodyPhaseAngle50kHz.value-bad + .unit::after,
+    #bodyFatPercent.value-bad + .unit::after,
+    #weightKg.value-bad + .unit::after,
+    #muscleMassKg.value-bad + .unit::after {
+      content: " 😞";
+      color: var(--bad);
+      font-size: 29px;
+      font-weight: 720;
+    }
+
+    #muscleMassKg.value-best + .unit::after {
+      content: " 🏆";
+      color: var(--ok);
+      font-size: 29px;
+      font-weight: 720;
+    }
+
     .unit {
       color: var(--muted);
       font-size: 13px;
@@ -344,6 +412,16 @@
 
     .kv span:nth-child(odd) {
       color: var(--muted);
+    }
+
+    .balance-warn {
+      color: var(--warn);
+      font-weight: 720;
+    }
+
+    .balance-bad {
+      color: var(--bad);
+      font-weight: 720;
     }
 
     .log {
@@ -613,22 +691,23 @@
             <span id="measuredAt" class="timestamp">--</span>
           </div>
           <div class="identity">
-            <div><span>ID</span><strong id="id">--</strong></div>
-            <div><span>体型</span><strong id="bodyType">--</strong></div>
+            <div><span>年齢</span><strong id="age">--</strong></div>
+            <div><span>身長</span><strong id="heightCm">--</strong></div>
             <div><span>性別</span><strong id="sex">--</strong></div>
-            <div><span>状態</span><strong id="status">--</strong></div>
           </div>
           <div class="metrics">
             <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div><div id="weightKgDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
+            <div class="metric"><div class="label">四肢筋肉量合計(ASM)</div><div class="value"><span id="appendicularSkeletalMuscleMassKg">--</span><span class="unit">kg</span></div></div>
+            <div class="metric"><div class="label">BMI</div><div class="value"><span id="bmi">--</span></div><div id="bmiDiff" class="diff"></div></div>
+            <div class="metric"><div class="label">内臓脂肪レベル</div><div class="value"><span id="visceralFatLevel">--</span></div><div id="visceralFatLevelDiff" class="diff"></div></div>
             <div class="metric"><div class="label">体脂肪率</div><div class="value"><span id="bodyFatPercent">--</span><span class="unit">%</span></div><div id="bodyFatPercentDiff" class="diff"></div></div>
             <div class="metric"><div class="label">筋肉量</div><div class="value"><span id="muscleMassKg">--</span><span class="unit">kg</span></div><div id="muscleMassKgDiff" class="diff"></div></div>
             <div class="metric"><div class="label">脂肪量</div><div class="value"><span id="fatMassKg">--</span><span class="unit">kg</span></div></div>
-            <div class="metric"><div class="label">BMI</div><div class="value"><span id="bmi">--</span></div></div>
-            <div class="metric"><div class="label">内臓脂肪レベル</div><div class="value"><span id="visceralFatLevel">--</span></div><div id="visceralFatLevelDiff" class="diff"></div></div>
-            <div class="metric"><div class="label">体水分率</div><div class="value"><span id="bodyWaterPercent">--</span><span class="unit">%</span></div></div>
-            <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
             <div class="metric"><div class="label">SMI</div><div class="value"><span id="appendicularSkeletalMuscleMassHeightSquared">--</span></div><div id="smiDiff" class="diff"></div></div>
             <div class="metric"><div class="label">位相角（全身・50kHz）</div><div class="value"><span id="wholeBodyPhaseAngle50kHz">--</span><span class="unit">°</span></div></div>
+            <div class="metric"><div class="label">腕筋肉バランス</div><div class="value"><span id="armMuscleBalance">--</span></div></div>
+            <div class="metric"><div class="label">足筋肉バランス</div><div class="value"><span id="legMuscleBalance">--</span></div></div>
           </div>
           <div class="panel-head">
             <h2>部位別</h2>
@@ -683,11 +762,22 @@
 
   <script type="module">
     import { MC780A } from "./MC780A.js";
+    import { CSV } from "https://code4fukui.github.io/CSV/CSV.js";
     import QRCode from "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm";
 
-    const BODY_TYPE_LABELS = { standard: "スタンダード", athlete: "アスリート", auto: "自動" };
     const SEX_LABELS = { male: "男性", female: "女性" };
-    const STATUS_LABELS = { ok: "正常", segment_error: "部位エラー" };
+    const FAT_STANDARD_COLUMNS = {
+      ageGroup: "年代",
+      sex: "性別",
+      lower: "体脂肪率（標準下限）",
+      upper: "体脂肪率（標準上限）",
+    };
+    const MUSCLE_STANDARD_COLUMNS = {
+      ageGroup: "年代",
+      sex: "性別",
+      lower: "筋肉量下限(kg)",
+      upper: "筋肉量上限(kg)",
+    };
 
     const SEGMENTS = [
       ["trunk", "体幹部"],
@@ -718,7 +808,6 @@
       muscleScore: "筋肉量スコア",
       boneMassKg: "推定骨量 kg",
       bodyWaterKg: "体水分量 kg",
-      bodyWaterPercent: "体水分率 %",
       bmi: "BMI",
       standardWeightKg: "標準体重 kg",
       obesityDegreePercent: "肥満度 %",
@@ -728,10 +817,11 @@
       basalMetabolicRateKcal: "基礎代謝量 kcal",
       athleteIndex: "アスリート指数",
       appendicularSkeletalMuscleMassHeightSquared: "SMI",
-      appendicularSkeletalMuscleMassKg: "四肢骨格筋量 kg",
+      appendicularSkeletalMuscleMassKg: "四肢筋肉量合計(ASM) kg",
       wholeBodyPhaseAngle50kHz: "全身位相角（50kHz）°",
       checksum: "チェックサム",
     };
+    const HIDDEN_FIELD_KEYS = new Set(["id", "cardId", "bodyWaterPercent"]);
 
     const SEGMENT_LABELS = {
       rightLeg: "右足",
@@ -743,9 +833,9 @@
 
     const els = Object.fromEntries([
       "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
-      "measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent",
-      "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent",
-      "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz",
+      "measuredAt", "age", "heightCm", "sex", "weightKg", "bodyFatPercent",
+      "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel",
+      "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance",
       "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt",
     ].map((id) => [id, document.getElementById(id)]));
 
@@ -764,6 +854,37 @@
     let currentRecord = null;
     let qrMode = false;
     let privacyMode = false;
+    let fatStandards = [];
+    let muscleStandards = [];
+
+    async function loadFatStandards() {
+      try {
+        fatStandards = (await CSV.fetchJSON("fat.csv")).map((row) => ({
+          ageGroup: row[FAT_STANDARD_COLUMNS.ageGroup],
+          sex: row[FAT_STANDARD_COLUMNS.sex],
+          lower: Number(row[FAT_STANDARD_COLUMNS.lower]),
+          upper: Number(row[FAT_STANDARD_COLUMNS.upper]),
+        })).filter((row) => row.ageGroup && row.sex && Number.isFinite(row.lower) && Number.isFinite(row.upper));
+      } catch (error) {
+        console.error(error);
+        fatStandards = [];
+      }
+    }
+
+    async function loadMuscleStandards() {
+      try {
+        muscleStandards = (await CSV.fetchJSON("muscle.csv")).map((row) => ({
+          ageGroup: row[MUSCLE_STANDARD_COLUMNS.ageGroup],
+          sex: row[MUSCLE_STANDARD_COLUMNS.sex],
+          lower: Number(row[MUSCLE_STANDARD_COLUMNS.lower]),
+          upper: Number(row[MUSCLE_STANDARD_COLUMNS.upper]),
+        })).filter((row) => row.ageGroup && row.sex && Number.isFinite(row.lower) && Number.isFinite(row.upper));
+      } catch (error) {
+        console.error(error);
+        muscleStandards = [];
+      }
+    }
+
 
     function openDatabase() {
       if (dbPromise) return dbPromise;
@@ -812,6 +933,7 @@
         savedAt: entry.savedAt || new Date().toISOString(),
         measuredAt: entry.measuredAt ?? fields.measuredAt ?? null,
         subjectId: entry.subjectId ?? fields.id ?? null,
+        age: entry.age ?? fields.age ?? null,
         model: entry.model ?? record?.model ?? fields.model ?? null,
         weightKg: entry.weightKg ?? fields.weightKg ?? null,
         bodyFatPercent: entry.bodyFatPercent ?? fields.bodyFatPercent ?? null,
@@ -826,6 +948,7 @@
         savedAt,
         measuredAt: fields.measuredAt ?? null,
         subjectId: fields.id ?? null,
+        age: fields.age ?? null,
         model: record.model ?? fields.model ?? null,
         weightKg: fields.weightKg ?? null,
         bodyFatPercent: fields.bodyFatPercent ?? null,
@@ -889,6 +1012,11 @@
       return String(value);
     }
 
+    function formatAge(value) {
+      const formatted = formatValue(value);
+      return formatted === "--" ? formatted : `${formatted}歳`;
+    }
+
     function formatDecimal(value, digits = 1) {
       if (value == null || value === "") return "--";
       if (typeof value !== "number") return String(value);
@@ -911,15 +1039,27 @@
       return `（体重比 ${(value / weightKg * 100).toFixed(1)}%）`;
     }
 
-    function formatLeftRightRatio(fields, segment) {
-      const pair = segment.endsWith("Leg") ? ["rightLeg", "leftLeg"]
-        : segment.endsWith("Arm") ? ["rightArm", "leftArm"]
-        : null;
-      if (!pair) return "";
-      const value = fields[`${segment}MuscleMassKg`];
-      const total = pair.reduce((sum, side) => sum + fields[`${side}MuscleMassKg`], 0);
-      if (value == null || pair.some((side) => fields[`${side}MuscleMassKg`] == null) || total <= 0) return "";
-      return `（左右比 ${(value / total * 100).toFixed(1)}%）`;
+    function muscleBalance(fields, pair) {
+      const [right, left] = pair.map((side) => fields[`${side}MuscleMassKg`]);
+      if (right == null || left == null || right <= 0 || left <= 0 || right === left) return "";
+      const largerSide = right > left ? "右" : "左";
+      const larger = Math.max(right, left);
+      const smaller = Math.min(right, left);
+      const diff = (larger - smaller) / larger * 100;
+      const className = diff >= 10 ? "balance-bad" : diff >= 5 ? "balance-warn" : "value-good";
+      return { className, label: `${largerSide}${diff.toFixed(1)}%` };
+    }
+
+    function setMuscleBalance(id, fields, pair) {
+      const balance = muscleBalance(fields, pair);
+      const target = els[id];
+      target.classList.remove("value-good", "balance-warn", "balance-bad");
+      if (!balance) {
+        target.textContent = "--";
+        return;
+      }
+      target.textContent = balance.label;
+      if (balance.className) target.classList.add(balance.className);
     }
 
     function formatDateTime(value) {
@@ -1120,6 +1260,128 @@
       els[id].textContent = mapper ? mapper(value) : formatValue(value);
     }
 
+    function setValueStatus(id, good) {
+      const target = els[id];
+      target.classList.remove("value-good", "value-best", "value-bad", "value-warn");
+      if (good == null) return;
+      target.classList.add(good ? "value-good" : "value-bad");
+    }
+
+    function setValueStatusClass(id, status) {
+      const target = els[id];
+      target.classList.remove("value-good", "value-best", "value-bad", "value-warn");
+      if (status) target.classList.add(`value-${status}`);
+    }
+
+    function setComparedValueStatus(id, current, baseline, higherIsGood) {
+      if (current == null || baseline == null) {
+        setValueStatus(id, null);
+        return;
+      }
+      setValueStatus(id, higherIsGood ? current >= baseline : current <= baseline);
+    }
+
+    function ageGroupLabel(age) {
+      const value = Number(age);
+      if (!Number.isFinite(value)) return null;
+      const decade = Math.floor(value / 10) * 10;
+      return decade >= 20 && decade <= 60 ? `${decade}代` : null;
+    }
+
+    function findFatStandard({ age, sex }) {
+      const ageGroup = ageGroupLabel(age);
+      const sexLabel = SEX_LABELS[sex];
+      if (!ageGroup || !sexLabel) return null;
+      return fatStandards.find((standard) => standard.ageGroup === ageGroup && standard.sex === sexLabel) ?? null;
+    }
+
+    function findMuscleStandard({ age, sex }) {
+      const ageGroup = ageGroupLabel(age);
+      const sexLabel = SEX_LABELS[sex];
+      if (!ageGroup || !sexLabel) return null;
+      return muscleStandards.find((standard) => standard.ageGroup === ageGroup && standard.sex === sexLabel) ?? null;
+    }
+
+    function setBodyFatStandard(fields) {
+      const target = els.bodyFatPercentDiff;
+      target.textContent = "";
+      const standard = findFatStandard(fields);
+      const bodyFatPercent = fields.bodyFatPercent;
+      if (!standard || bodyFatPercent == null) {
+        setValueStatusClass("bodyFatPercent", null);
+        return;
+      }
+      const base = document.createElement("span");
+      base.textContent = `標準範囲 ${formatValue(standard.lower)}-${formatValue(standard.upper)}%`;
+      target.append(base);
+      if (bodyFatPercent <= standard.lower) {
+        setValueStatusClass("bodyFatPercent", "good");
+      } else if (bodyFatPercent > standard.upper) {
+        setValueStatusClass("bodyFatPercent", "bad");
+      } else {
+        setValueStatusClass("bodyFatPercent", null);
+      }
+    }
+
+    function setMuscleStandard(fields) {
+      const target = els.muscleMassKgDiff;
+      target.textContent = "";
+      const standard = findMuscleStandard(fields);
+      const muscleMassKg = fields.muscleMassKg;
+      if (!standard || muscleMassKg == null) {
+        setValueStatusClass("muscleMassKg", null);
+        return;
+      }
+      const base = document.createElement("span");
+      base.textContent = `標準範囲 ${formatValue(standard.lower)}-${formatValue(standard.upper)}kg`;
+      target.append(base);
+      if (muscleMassKg < standard.lower) {
+        setValueStatusClass("muscleMassKg", "bad");
+      } else if (muscleMassKg > standard.upper) {
+        setValueStatusClass("muscleMassKg", "best");
+      } else {
+        setValueStatusClass("muscleMassKg", "good");
+      }
+    }
+
+    function bmiStatus(value) {
+      if (typeof value !== "number") return null;
+      if (value < 18.5) return "warn";
+      if (value < 25) return "good";
+      if (value < 30) return "warn";
+      return "bad";
+    }
+
+    function setBMIDiff(value) {
+      const target = els.bmiDiff;
+      target.textContent = "";
+      if (typeof value !== "number") return;
+      const base = document.createElement("span");
+      base.textContent = "基準 18.5-25未満";
+      const status = document.createElement("span");
+      const bmiClass = bmiStatus(value);
+      status.className = bmiClass === "bad" ? "warn" : bmiClass === "good" ? "good" : "";
+      status.textContent = value < 18.5 ? "やせ" : value < 25 ? "標準" : value < 30 ? "肥満1度" : "肥満2度以上";
+      target.append(base, status);
+    }
+
+    function phaseAngleStatus(value, sex) {
+      if (typeof value !== "number") return null;
+      const phaseAngle = Math.abs(value);
+      if (sex === "male") {
+        if (phaseAngle < 4.1) return "bad";
+        if (phaseAngle < 5) return "warn";
+        if (phaseAngle >= 6) return "good";
+        return null;
+      }
+      if (sex === "female") {
+        if (phaseAngle < 4.1) return "bad";
+        if (phaseAngle < 4.5) return "warn";
+        if (phaseAngle >= 5.5) return "good";
+      }
+      return null;
+    }
+
     function signedValue(value, unit = "") {
       if (value == null || Number.isNaN(value)) return "--";
       const rounded = value.toFixed(1);
@@ -1164,6 +1426,7 @@
         good: smi >= threshold,
         label: smi >= threshold ? "目安以上" : "低め",
       };
+      setValueStatus("appendicularSkeletalMuscleMassHeightSquared", status?.good ?? null);
       setRangeDiff("smiDiff", smi, threshold, "低筋量目安", "", smi == null || threshold == null ? null : smi - threshold, status);
     }
 
@@ -1174,6 +1437,7 @@
         good: level <= healthyMax,
         label: level <= healthyMax ? "範囲内" : "高め",
       };
+      setValueStatus("visceralFatLevel", status?.good ?? null);
       setRangeDiff("visceralFatLevelDiff", level, healthyMax, "健康範囲上限", "", level == null ? null : level - healthyMax, status);
     }
 
@@ -1188,10 +1452,8 @@
             <span>脂肪率</span><strong>${formatDecimal(fields[`${segment}BodyFatPercent`])}%</strong>
             <span>脂肪量</span><strong>${formatDecimal(fields[`${segment}FatMassKg`])} kg</strong>
             <span>除脂肪量</span><strong>${formatDecimal(fields[`${segment}FatFreeMassKg`])} kg</strong>
-            <span>筋肉量</span><strong>${formatDecimal(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}${formatLeftRightRatio(fields, segment)}</strong>
+            <span>筋肉量</span><strong>${formatDecimal(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}</strong>
             ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
-            <span>脂肪スコア</span><strong>${formatValue(fields[`${segment}BodyFatScore`])}</strong>
-            <span>筋肉スコア</span><strong>${formatValue(fields[`${segment}MuscleScore`])}</strong>
           </div>
         `;
         els.segments.append(div);
@@ -1201,7 +1463,7 @@
     function renderFields(fields) {
       els.fields.textContent = "";
       const entries = Object.entries(fields)
-        .filter(([key, value]) => value != null && !key.endsWith("Code") && key !== "unknown")
+        .filter(([key, value]) => value != null && !key.endsWith("Code") && key !== "unknown" && !HIDDEN_FIELD_KEYS.has(key))
         .sort(([a], [b]) => (FIELD_LABELS[a] ?? a).localeCompare(FIELD_LABELS[b] ?? b, "ja"));
       for (const [key, value] of entries) {
         const row = document.createElement("tr");
@@ -1227,25 +1489,30 @@
         els.count.textContent = String(receivedCount);
       }
       els.measuredAt.textContent = fields.measuredAt ?? "--";
-      setText("id", fields.id);
-      setText("bodyType", fields.bodyType, (value) => BODY_TYPE_LABELS[value] ?? formatValue(value));
+      setText("age", fields.age, formatAge);
+      setText("heightCm", fields.heightCm, (value) => `${formatDecimal(value)} cm`);
       setText("sex", fields.sex, (value) => SEX_LABELS[value] ?? formatValue(value));
-      setText("status", fields.status, (value) => STATUS_LABELS[value] ?? formatValue(value));
       setText("weightKg", fields.weightKg, formatDecimal);
       setText("bodyFatPercent", fields.bodyFatPercent, formatDecimal);
       setText("muscleMassKg", fields.muscleMassKg, formatDecimal);
       setDiff("weightKgDiff", fields.weightKg, fields.standardWeightKg, "kg");
-      setDiff("bodyFatPercentDiff", fields.bodyFatPercent, fields.standardBodyFatPercent, "%");
-      setDiff("muscleMassKgDiff", fields.muscleMassKg, fields.standardMuscleMassKg, "kg");
+      setBodyFatStandard(fields);
+      setMuscleStandard(fields);
+      setComparedValueStatus("weightKg", fields.weightKg, fields.standardWeightKg, false);
       setVisceralFatDiff(fields);
       setSMIDiff(fields);
       setText("fatMassKg", fields.fatMassKg, formatDecimal);
       setText("bmi", fields.bmi, formatDecimal);
+      setValueStatusClass("bmi", bmiStatus(fields.bmi));
+      setBMIDiff(fields.bmi);
       setText("visceralFatLevel", fields.visceralFatLevel);
-      setText("bodyWaterPercent", fields.bodyWaterPercent, formatDecimal);
       setText("basalMetabolicRateKcal", fields.basalMetabolicRateKcal);
+      setText("appendicularSkeletalMuscleMassKg", fields.appendicularSkeletalMuscleMassKg, formatDecimal);
       setText("appendicularSkeletalMuscleMassHeightSquared", fields.appendicularSkeletalMuscleMassHeightSquared, (value) => formatDecimal(value, 2));
       setText("wholeBodyPhaseAngle50kHz", fields.wholeBodyPhaseAngle50kHz, formatPhaseAngle);
+      setValueStatusClass("wholeBodyPhaseAngle50kHz", phaseAngleStatus(fields.wholeBodyPhaseAngle50kHz, fields.sex));
+      setMuscleBalance("armMuscleBalance", fields, ["rightArm", "leftArm"]);
+      setMuscleBalance("legMuscleBalance", fields, ["rightLeg", "leftLeg"]);
       els.checksum.textContent = `CS ${fields.checksum ?? "--"}`;
       els.lastLength.textContent = `${new Blob([record.raw]).size} bytes`;
       renderSegments(fields);
@@ -1257,10 +1524,11 @@
       currentRecord = null;
       setQRMode(false);
       els.showQR.disabled = true;
-      for (const id of ["measuredAt", "id", "bodyType", "sex", "status", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz"]) {
+      for (const id of ["measuredAt", "age", "heightCm", "sex", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance"]) {
         els[id].textContent = "--";
+        els[id].classList.remove("value-good", "value-best", "value-bad", "value-warn", "balance-warn", "balance-bad");
       }
-      for (const id of ["weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "visceralFatLevelDiff", "smiDiff"]) {
+      for (const id of ["weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff"]) {
         els[id].textContent = "";
       }
       els.checksum.textContent = "CS --";
@@ -1294,7 +1562,7 @@
         button.className = `history-item${entry.id === selectedHistoryId ? " active" : ""}`;
         const title = `${formatDateTime(entry.savedAt)} 保存`;
         const measured = entry.measuredAt ? `測定 ${entry.measuredAt.replace("T", " ")}` : "測定日時 --";
-        const subject = entry.subjectId ? `ID ${entry.subjectId}` : "ID --";
+        const subject = entry.age != null ? `年齢 ${formatAge(entry.age)}` : "年齢 --";
         const main = document.createElement("span");
         const titleNode = document.createElement("span");
         const sub = document.createElement("span");
@@ -1512,6 +1780,7 @@
     els.deleteAllHistory.addEventListener("click", confirmDeleteAllHistory);
     els.showQR.addEventListener("click", toggleQRMode);
     els.privacyMode.addEventListener("click", togglePrivacyMode);
+    await Promise.all([loadFatStandards(), loadMuscleStandards()]);
     clearDisplay();
   </script>
 </body>
