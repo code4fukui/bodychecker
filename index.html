@@ -383,6 +383,27 @@
       overflow-wrap: anywhere;
     }
 
+    .identity .body-type {
+      min-height: 112px;
+    }
+
+    .identity .body-type strong {
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .body-type-image {
+      display: block;
+      width: 72px;
+      height: 72px;
+      margin: 2px auto 6px;
+      object-fit: contain;
+    }
+
+    .body-type-image[hidden] {
+      display: none;
+    }
+
     .segments {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -422,6 +443,100 @@
     .balance-bad {
       color: var(--bad);
       font-weight: 720;
+    }
+
+    .score-map {
+      position: relative;
+      min-height: 330px;
+      margin: 14px 0;
+      border: 1px solid var(--line);
+      background: white;
+      overflow: hidden;
+    }
+
+    .score-grid {
+      position: absolute;
+      inset: 34px 36px 42px 52px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      border-left: 2px solid #98a2b3;
+      border-bottom: 2px solid #98a2b3;
+      background: #f9fafb;
+    }
+
+    .score-cell {
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      border-top: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .score-cell.standard {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .score-points {
+      position: absolute;
+      inset: 34px 36px 42px 52px;
+    }
+
+    .score-point {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 24px;
+      padding: 0 6px;
+      border: 2px solid var(--accent);
+      border-radius: 999px;
+      background: white;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 3px 8px rgba(23, 32, 42, 0.12);
+      white-space: nowrap;
+    }
+
+    .score-point.average {
+      z-index: 3;
+    }
+
+    .score-axis-x,
+    .score-axis-y {
+      position: absolute;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.2;
+    }
+
+    .score-axis-x {
+      right: 36px;
+      bottom: 14px;
+    }
+
+    .score-axis-y {
+      top: 12px;
+      left: 14px;
+    }
+
+    .score-empty {
+      position: absolute;
+      inset: 34px 36px 42px 52px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .log {
@@ -694,7 +809,17 @@
             <div><span>年齢</span><strong id="age">--</strong></div>
             <div><span>身長</span><strong id="heightCm">--</strong></div>
             <div><span>性別</span><strong id="sex">--</strong></div>
+            <div class="body-type">
+              <span>体型</span>
+              <img id="bodyTypeImage" class="body-type-image" alt="体型" hidden>
+              <strong id="bodyType">--</strong>
+            </div>
           </div>
+          <div class="panel-head">
+            <h2>体型判定マップ</h2>
+            <span class="timestamp">横: 筋肉量判定 / 縦: 体脂肪率判定</span>
+          </div>
+          <div id="scoreMap" class="score-map"></div>
           <div class="metrics">
             <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div><div id="weightKgDiff" class="diff"></div></div>
             <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
@@ -821,7 +946,7 @@
       wholeBodyPhaseAngle50kHz: "全身位相角（50kHz）°",
       checksum: "チェックサム",
     };
-    const HIDDEN_FIELD_KEYS = new Set(["id", "cardId", "bodyWaterPercent"]);
+    const HIDDEN_FIELD_KEYS = new Set(["id", "cardId", "bodyWaterPercent", "bodyType"]);
 
     const SEGMENT_LABELS = {
       rightLeg: "右足",
@@ -830,13 +955,30 @@
       leftArm: "左腕",
       trunk: "体幹部",
     };
+    const BODY_SHAPE_IMAGES = [
+      ["1-kakurehiman.png", "2-himan.png", "3-katabutori.png"],
+      ["4-undobusoku.png", "5-hyojun.png", "6-kinnikushitsu1.png"],
+      ["7-yase.png", "8-hosomikinnikushitsu.png", "9-kinnikushitsu2.png"],
+    ];
+    const SCORE_POINTS = [
+      ["trunk", "体幹"],
+      ["rightArm", "右腕"],
+      ["leftArm", "左腕"],
+      ["rightLeg", "右足"],
+      ["leftLeg", "左足"],
+    ];
+    const SCORE_MAP_LABELS = [
+      ["かくれ肥満", "肥満型", "かた太り"],
+      ["運動不足", "標準", "筋肉質"],
+      ["やせ型", "細身筋肉質", "筋肉質"],
+    ];
 
     const els = Object.fromEntries([
       "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
-      "measuredAt", "age", "heightCm", "sex", "weightKg", "bodyFatPercent",
+      "measuredAt", "age", "heightCm", "sex", "bodyTypeImage", "bodyType", "weightKg", "bodyFatPercent",
       "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel",
       "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance",
-      "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt",
+      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt",
     ].map((id) => [id, document.getElementById(id)]));
 
     const DB_NAME = "mc780a-monitor";
@@ -1185,9 +1327,11 @@
         "visceralFatLevel", "bodyWaterPercent", "basalMetabolicRateKcal",
         "appendicularSkeletalMuscleMassHeightSquared", "appendicularSkeletalMuscleMassKg",
         "standardWeightKg", "standardBodyFatPercent", "standardMuscleMassKg",
-        "rightLegBodyFatPercent", "rightLegMuscleMassKg", "leftLegBodyFatPercent", "leftLegMuscleMassKg",
-        "rightArmBodyFatPercent", "rightArmMuscleMassKg", "leftArmBodyFatPercent", "leftArmMuscleMassKg",
-        "trunkBodyFatPercent", "trunkMuscleMassKg", "wholeBodyPhaseAngle50kHz",
+        "rightLegBodyFatPercent", "rightLegMuscleMassKg", "rightLegBodyFatScore", "rightLegMuscleScore",
+        "leftLegBodyFatPercent", "leftLegMuscleMassKg", "leftLegBodyFatScore", "leftLegMuscleScore",
+        "rightArmBodyFatPercent", "rightArmMuscleMassKg", "rightArmBodyFatScore", "rightArmMuscleScore",
+        "leftArmBodyFatPercent", "leftArmMuscleMassKg", "leftArmBodyFatScore", "leftArmMuscleScore",
+        "trunkBodyFatPercent", "trunkMuscleMassKg", "trunkBodyFatScore", "trunkMuscleScore", "wholeBodyPhaseAngle50kHz",
         "rightLegPhaseAngle50kHz", "leftLegPhaseAngle50kHz",
         "rightArmPhaseAngle50kHz", "leftArmPhaseAngle50kHz",
       ];
@@ -1441,6 +1585,105 @@
       setRangeDiff("visceralFatLevelDiff", level, healthyMax, "健康範囲上限", "", level == null ? null : level - healthyMax, status);
     }
 
+    function clampScore(value) {
+      return Math.min(4, Math.max(-4, value));
+    }
+
+    function scoreAverage(fields) {
+      let fatTotal = 0;
+      let muscleTotal = 0;
+      let count = 0;
+      for (const [segment] of SCORE_POINTS) {
+        const fatScore = fields[`${segment}BodyFatScore`];
+        const muscleScore = fields[`${segment}MuscleScore`];
+        if (typeof fatScore !== "number" || typeof muscleScore !== "number") continue;
+        fatTotal += fatScore;
+        muscleTotal += muscleScore;
+        count++;
+      }
+      if (!count) return null;
+      return {
+        fatScore: fatTotal / count,
+        muscleScore: muscleTotal / count,
+      };
+    }
+
+    function bodyShapeInfo(fields) {
+      const average = scoreAverage(fields);
+      if (!average) return null;
+      const row = average.fatScore > 1 ? 0 : average.fatScore < -1 ? 2 : 1;
+      const col = average.muscleScore < -1 ? 0 : average.muscleScore > 1 ? 2 : 1;
+      const sexDir = fields.sex === "female" ? "female" : fields.sex === "male" ? "male" : null;
+      const image = sexDir ? `img/${sexDir}/${BODY_SHAPE_IMAGES[row][col]}` : null;
+      return {
+        label: SCORE_MAP_LABELS[row][col],
+        image,
+      };
+    }
+
+    function setBodyType(fields) {
+      const info = bodyShapeInfo(fields);
+      els.bodyType.textContent = info?.label ?? "--";
+      if (info?.image) {
+        els.bodyTypeImage.hidden = false;
+        els.bodyTypeImage.src = info.image;
+        els.bodyTypeImage.alt = info.label ?? "体型";
+      } else {
+        els.bodyTypeImage.hidden = true;
+        els.bodyTypeImage.removeAttribute("src");
+        els.bodyTypeImage.alt = "";
+      }
+    }
+
+    function appendScorePoint(points, label, fatScore, muscleScore, className = "") {
+      const point = document.createElement("span");
+      point.className = `score-point${className ? ` ${className}` : ""}`;
+      point.textContent = label;
+      point.title = `${label}: 筋肉量判定 ${formatDecimal(muscleScore, 1)}, 体脂肪率判定 ${formatDecimal(fatScore, 1)}`;
+      point.style.left = `${(clampScore(muscleScore) + 4) / 8 * 100}%`;
+      point.style.top = `${(4 - clampScore(fatScore)) / 8 * 100}%`;
+      points.append(point);
+    }
+
+    function renderScoreMap(fields) {
+      els.scoreMap.textContent = "";
+      const grid = document.createElement("div");
+      grid.className = "score-grid";
+      for (const row of SCORE_MAP_LABELS) {
+        for (const label of row) {
+          const cell = document.createElement("div");
+          cell.className = `score-cell${label === "標準" ? " standard" : ""}`;
+          cell.textContent = label;
+          grid.append(cell);
+        }
+      }
+      const points = document.createElement("div");
+      points.className = "score-points";
+      let count = 0;
+      const average = scoreAverage(fields);
+      if (average) appendScorePoint(points, "平均", average.fatScore, average.muscleScore, "average");
+      for (const [segment, label] of SCORE_POINTS) {
+        const fatScore = fields[`${segment}BodyFatScore`];
+        const muscleScore = fields[`${segment}MuscleScore`];
+        if (typeof fatScore !== "number" || typeof muscleScore !== "number") continue;
+        appendScorePoint(points, label, fatScore, muscleScore);
+        count++;
+      }
+      const axisX = document.createElement("div");
+      axisX.className = "score-axis-x";
+      axisX.textContent = "筋肉量判定 →";
+      const axisY = document.createElement("div");
+      axisY.className = "score-axis-y";
+      axisY.textContent = "↑ 体脂肪率判定";
+      els.scoreMap.append(grid, points, axisX, axisY);
+      if (!count) {
+        const empty = document.createElement("div");
+        empty.className = "score-empty";
+        empty.textContent = "スコアがありません";
+        els.scoreMap.append(empty);
+      }
+    }
+
     function renderSegments(fields) {
       els.segments.textContent = "";
       for (const [segment] of SEGMENTS) {
@@ -1453,7 +1696,22 @@
             <span>脂肪量</span><strong>${formatDecimal(fields[`${segment}FatMassKg`])} kg</strong>
             <span>除脂肪量</span><strong>${formatDecimal(fields[`${segment}FatFreeMassKg`])} kg</strong>
             <span>筋肉量</span><strong>${formatDecimal(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}</strong>
+            <span>脂肪スコア</span><strong>${formatDecimal(fields[`${segment}BodyFatScore`])}</strong>
+            <span>筋肉スコア</span><strong>${formatDecimal(fields[`${segment}MuscleScore`])}</strong>
             ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
+          </div>
+        `;
+        els.segments.append(div);
+      }
+      const average = scoreAverage(fields);
+      if (average) {
+        const div = document.createElement("div");
+        div.className = "segment";
+        div.innerHTML = `
+          <h3>平均</h3>
+          <div class="kv">
+            <span>脂肪スコア</span><strong>${formatDecimal(average.fatScore)}</strong>
+            <span>筋肉スコア</span><strong>${formatDecimal(average.muscleScore)}</strong>
           </div>
         `;
         els.segments.append(div);
@@ -1492,6 +1750,7 @@
       setText("age", fields.age, formatAge);
       setText("heightCm", fields.heightCm, (value) => `${formatDecimal(value)} cm`);
       setText("sex", fields.sex, (value) => SEX_LABELS[value] ?? formatValue(value));
+      setBodyType(fields);
       setText("weightKg", fields.weightKg, formatDecimal);
       setText("bodyFatPercent", fields.bodyFatPercent, formatDecimal);
       setText("muscleMassKg", fields.muscleMassKg, formatDecimal);
@@ -1515,6 +1774,7 @@
       setMuscleBalance("legMuscleBalance", fields, ["rightLeg", "leftLeg"]);
       els.checksum.textContent = `CS ${fields.checksum ?? "--"}`;
       els.lastLength.textContent = `${new Blob([record.raw]).size} bytes`;
+      renderScoreMap(fields);
       renderSegments(fields);
       renderFields(fields);
     }
@@ -1524,15 +1784,19 @@
       currentRecord = null;
       setQRMode(false);
       els.showQR.disabled = true;
-      for (const id of ["measuredAt", "age", "heightCm", "sex", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance"]) {
+      for (const id of ["measuredAt", "age", "heightCm", "sex", "bodyType", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance"]) {
         els[id].textContent = "--";
         els[id].classList.remove("value-good", "value-best", "value-bad", "value-warn", "balance-warn", "balance-bad");
       }
+      els.bodyTypeImage.hidden = true;
+      els.bodyTypeImage.removeAttribute("src");
+      els.bodyTypeImage.alt = "";
       for (const id of ["weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff"]) {
         els[id].textContent = "";
       }
       els.checksum.textContent = "CS --";
       els.fields.innerHTML = '<tr><td colspan="2" class="empty">--</td></tr>';
+      els.scoreMap.textContent = "";
       els.segments.textContent = "";
     }
 

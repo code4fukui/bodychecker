@@ -341,6 +341,100 @@
       font-weight: 720;
     }
 
+    .score-map {
+      position: relative;
+      min-height: 300px;
+      margin: 12px 0;
+      border: 1px solid var(--line);
+      background: white;
+      overflow: hidden;
+    }
+
+    .score-grid {
+      position: absolute;
+      inset: 32px 30px 40px 48px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      border-left: 2px solid #98a2b3;
+      border-bottom: 2px solid #98a2b3;
+      background: #f9fafb;
+    }
+
+    .score-cell {
+      display: grid;
+      place-items: center;
+      padding: 7px;
+      border-top: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .score-cell.standard {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .score-points {
+      position: absolute;
+      inset: 32px 30px 40px 48px;
+    }
+
+    .score-point {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 23px;
+      padding: 0 6px;
+      border: 2px solid var(--accent);
+      border-radius: 999px;
+      background: white;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 3px 8px rgba(23, 32, 42, 0.12);
+      white-space: nowrap;
+    }
+
+    .score-point.average {
+      z-index: 3;
+    }
+
+    .score-axis-x,
+    .score-axis-y {
+      position: absolute;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.2;
+    }
+
+    .score-axis-x {
+      right: 30px;
+      bottom: 13px;
+    }
+
+    .score-axis-y {
+      top: 11px;
+      left: 13px;
+    }
+
+    .score-empty {
+      position: absolute;
+      inset: 32px 30px 40px 48px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .empty {
       padding: 30px 14px;
       color: var(--muted);
@@ -405,6 +499,11 @@
           <h2>測定値</h2>
           <span id="measuredAt" class="pill">--</span>
         </div>
+        <div class="panel-head">
+          <h2>体型判定マップ</h2>
+          <span class="pill">筋肉量 / 体脂肪率</span>
+        </div>
+        <div id="scoreMap" class="score-map"></div>
         <div class="metrics">
           <div class="metric"><div class="label">体重</div><div class="value"><span id="weightKg">--</span><span class="unit">kg</span></div><div id="weightDiff" class="diff"></div></div>
           <div class="metric"><div class="label">基礎代謝量</div><div class="value"><span id="basalMetabolicRateKcal">--</span><span class="unit">kcal</span></div></div>
@@ -452,11 +551,23 @@
       ["rightLeg", "右足"],
       ["leftLeg", "左足"],
     ];
+    const SCORE_POINTS = [
+      ["trunk", "体幹"],
+      ["rightArm", "右腕"],
+      ["leftArm", "左腕"],
+      ["rightLeg", "右足"],
+      ["leftLeg", "左足"],
+    ];
+    const SCORE_MAP_LABELS = [
+      ["かくれ肥満", "肥満型", "かた太り"],
+      ["運動不足", "標準", "筋肉質"],
+      ["やせ型", "細身筋肉質", "筋肉質"],
+    ];
     const els = Object.fromEntries([
       "count", "message", "records", "measuredAt", "weightKg", "bodyFatPercent",
       "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "smi",
       "basalMetabolicRateKcal", "asm", "weightDiff", "bodyFatDiff", "muscleDiff", "bmiDiff",
-      "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance", "visceralDiff", "smiDiff", "segments",
+      "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance", "visceralDiff", "smiDiff", "scoreMap", "segments",
     ].map((id) => [id, document.getElementById(id)]));
     let selectedKey = null;
     let fatStandards = [];
@@ -739,6 +850,78 @@
       }
     }
 
+    function clampScore(value) {
+      return Math.min(4, Math.max(-4, value));
+    }
+
+    function scoreAverage(record) {
+      let fatTotal = 0;
+      let muscleTotal = 0;
+      let count = 0;
+      for (const [segment] of SCORE_POINTS) {
+        const fatScore = record[`${segment}BodyFatScore`];
+        const muscleScore = record[`${segment}MuscleScore`];
+        if (typeof fatScore !== "number" || typeof muscleScore !== "number") continue;
+        fatTotal += fatScore;
+        muscleTotal += muscleScore;
+        count++;
+      }
+      if (!count) return null;
+      return {
+        fatScore: fatTotal / count,
+        muscleScore: muscleTotal / count,
+      };
+    }
+
+    function appendScorePoint(points, label, fatScore, muscleScore, className = "") {
+      const point = document.createElement("span");
+      point.className = `score-point${className ? ` ${className}` : ""}`;
+      point.textContent = label;
+      point.title = `${label}: 筋肉量判定 ${formatDecimal(muscleScore, 1)}, 体脂肪率判定 ${formatDecimal(fatScore, 1)}`;
+      point.style.left = `${(clampScore(muscleScore) + 4) / 8 * 100}%`;
+      point.style.top = `${(4 - clampScore(fatScore)) / 8 * 100}%`;
+      points.append(point);
+    }
+
+    function renderScoreMap(record) {
+      els.scoreMap.textContent = "";
+      const grid = document.createElement("div");
+      grid.className = "score-grid";
+      for (const row of SCORE_MAP_LABELS) {
+        for (const label of row) {
+          const cell = document.createElement("div");
+          cell.className = `score-cell${label === "標準" ? " standard" : ""}`;
+          cell.textContent = label;
+          grid.append(cell);
+        }
+      }
+      const points = document.createElement("div");
+      points.className = "score-points";
+      let count = 0;
+      const average = scoreAverage(record);
+      if (average) appendScorePoint(points, "平均", average.fatScore, average.muscleScore, "average");
+      for (const [segment, label] of SCORE_POINTS) {
+        const fatScore = record[`${segment}BodyFatScore`];
+        const muscleScore = record[`${segment}MuscleScore`];
+        if (typeof fatScore !== "number" || typeof muscleScore !== "number") continue;
+        appendScorePoint(points, label, fatScore, muscleScore);
+        count++;
+      }
+      const axisX = document.createElement("div");
+      axisX.className = "score-axis-x";
+      axisX.textContent = "筋肉量判定 →";
+      const axisY = document.createElement("div");
+      axisY.className = "score-axis-y";
+      axisY.textContent = "↑ 体脂肪率判定";
+      els.scoreMap.append(grid, points, axisX, axisY);
+      if (!count) {
+        const empty = document.createElement("div");
+        empty.className = "score-empty";
+        empty.textContent = "スコアがありません";
+        els.scoreMap.append(empty);
+      }
+    }
+
     function renderSegments(record) {
       els.segments.textContent = "";
       for (const [segment, label] of SEGMENTS) {
@@ -749,7 +932,22 @@
           <div class="kv">
             <span>脂肪率</span><strong>${formatDecimal(record[`${segment}BodyFatPercent`])}%</strong>
             <span>筋肉量</span><strong>${formatDecimal(record[`${segment}MuscleMassKg`])} kg${formatWeightRatio(record[`${segment}MuscleMassKg`], record.weightKg)}</strong>
+            <span>脂肪スコア</span><strong>${formatDecimal(record[`${segment}BodyFatScore`])}</strong>
+            <span>筋肉スコア</span><strong>${formatDecimal(record[`${segment}MuscleScore`])}</strong>
             ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(record[`${segment}PhaseAngle50kHz`])}°</strong>`}
+          </div>
+        `;
+        els.segments.append(div);
+      }
+      const average = scoreAverage(record);
+      if (average) {
+        const div = document.createElement("div");
+        div.className = "segment";
+        div.innerHTML = `
+          <h3>平均</h3>
+          <div class="kv">
+            <span>脂肪スコア</span><strong>${formatDecimal(average.fatScore)}</strong>
+            <span>筋肉スコア</span><strong>${formatDecimal(average.muscleScore)}</strong>
           </div>
         `;
         els.segments.append(div);
@@ -793,6 +991,7 @@
       };
       setValueStatus("smi", smiStatus?.good ?? null);
       setRangeDiff("smiDiff", smi, smiBase, "低筋量目安", smiStatus, smi == null || smiBase == null ? null : smi - smiBase);
+      renderScoreMap(record);
       renderSegments(record);
       renderList(loadRecords());
     }
