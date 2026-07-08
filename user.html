@@ -659,7 +659,8 @@
 
     function muscleBalance(record, pair) {
       const [right, left] = pair.map((side) => record[`${side}MuscleMassKg`]);
-      if (right == null || left == null || right <= 0 || left <= 0 || right === left) return "";
+      if (right == null || left == null || right <= 0 || left <= 0) return "";
+      if (right === left) return { className: "value-good", label: "0%" };
       const largerSide = right > left ? "右" : "左";
       const larger = Math.max(right, left);
       const smaller = Math.min(right, left);
