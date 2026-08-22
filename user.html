@@ -303,7 +303,7 @@
 
     .segments {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1px;
       background: var(--line);
     }
@@ -653,8 +653,8 @@
     }
 
     function formatWeightRatio(value, weightKg) {
-      if (value == null || weightKg == null || weightKg <= 0) return "";
-      return `（体重比 ${(value / weightKg * 100).toFixed(1)}%）`;
+      if (value == null || weightKg == null || weightKg <= 0) return "--";
+      return `${(value / weightKg * 100).toFixed(1)}%`;
     }
 
     function muscleBalance(record, pair) {
@@ -925,21 +925,6 @@
 
     function renderSegments(record) {
       els.segments.textContent = "";
-      for (const [segment, label] of SEGMENTS) {
-        const div = document.createElement("div");
-        div.className = "segment";
-        div.innerHTML = `
-          <h3>${label}</h3>
-          <div class="kv">
-            <span>脂肪率</span><strong>${formatDecimal(record[`${segment}BodyFatPercent`])}%</strong>
-            <span>筋肉量</span><strong>${formatDecimal(record[`${segment}MuscleMassKg`])} kg${formatWeightRatio(record[`${segment}MuscleMassKg`], record.weightKg)}</strong>
-            <span>脂肪スコア</span><strong>${formatDecimal(record[`${segment}BodyFatScore`])}</strong>
-            <span>筋肉スコア</span><strong>${formatDecimal(record[`${segment}MuscleScore`])}</strong>
-            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(record[`${segment}PhaseAngle50kHz`])}°</strong>`}
-          </div>
-        `;
-        els.segments.append(div);
-      }
       const average = scoreAverage(record);
       if (average) {
         const div = document.createElement("div");
@@ -949,6 +934,22 @@
           <div class="kv">
             <span>脂肪スコア</span><strong>${formatDecimal(average.fatScore)}</strong>
             <span>筋肉スコア</span><strong>${formatDecimal(average.muscleScore)}</strong>
+          </div>
+        `;
+        els.segments.append(div);
+      }
+      for (const [segment, label] of SEGMENTS) {
+        const div = document.createElement("div");
+        div.className = "segment";
+        div.innerHTML = `
+          <h3>${label}</h3>
+          <div class="kv">
+            <span>脂肪率</span><strong>${formatDecimal(record[`${segment}BodyFatPercent`])}%</strong>
+            <span>筋肉量</span><strong>${formatDecimal(record[`${segment}MuscleMassKg`])} kg</strong>
+            <span>筋肉量体重比</span><strong>${formatWeightRatio(record[`${segment}MuscleMassKg`], record.weightKg)}</strong>
+            <span>脂肪スコア</span><strong>${formatDecimal(record[`${segment}BodyFatScore`])}</strong>
+            <span>筋肉スコア</span><strong>${formatDecimal(record[`${segment}MuscleScore`])}</strong>
+            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(record[`${segment}PhaseAngle50kHz`])}°</strong>`}
           </div>
         `;
         els.segments.append(div);

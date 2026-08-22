@@ -32,8 +32,70 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    button, select {
+    button, select, input {
       font: inherit;
+    }
+
+    dialog {
+      width: min(560px, calc(100% - 28px));
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text);
+      box-shadow: 0 24px 60px rgba(23, 32, 42, 0.22);
+    }
+
+    dialog::backdrop {
+      background: rgba(23, 32, 42, 0.42);
+    }
+
+    .settings-form {
+      padding: 18px;
+    }
+
+    .settings-form h2 {
+      margin-bottom: 16px;
+    }
+
+    .settings-field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .settings-field label {
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    .settings-field input {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+    }
+
+    .settings-help,
+    .settings-error {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .settings-help {
+      color: var(--muted);
+    }
+
+    .settings-error {
+      min-height: 1.4em;
+      color: var(--bad);
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
     }
 
     .app {
@@ -406,7 +468,7 @@
 
     .segments {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1px;
       background: var(--line);
     }
@@ -795,8 +857,26 @@
       <button id="clear" class="button secondary" type="button">クリア</button>
       <button id="showQR" class="button secondary" type="button" disabled aria-pressed="false">QR表示</button>
       <button id="privacyMode" class="button secondary" type="button" aria-pressed="false">プライバシーモード</button>
+      <button id="openSettings" class="button secondary" type="button">設定</button>
       <input id="importFile" type="file" accept=".csv,text/csv" hidden>
     </section>
+
+    <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+      <form id="settingsForm" class="settings-form" method="dialog">
+        <h2 id="settingsTitle">QR設定</h2>
+        <div class="settings-field">
+          <label for="qrURLPrefix">URLプリフィックス</label>
+          <input id="qrURLPrefix" name="qrURLPrefix" type="url" required spellcheck="false">
+          <p class="settings-help">QRに埋め込むデータの直前までを指定します（例: https://example.com/user.html?）</p>
+          <p id="settingsError" class="settings-error" role="alert"></p>
+        </div>
+        <div class="settings-actions">
+          <button id="resetSettings" class="button secondary" type="button">初期値に戻す</button>
+          <button id="closeSettings" class="button secondary" type="button">キャンセル</button>
+          <button class="button" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
 
     <section id="mainGrid" class="grid">
       <div class="panel">
@@ -974,17 +1054,18 @@
     ];
 
     const els = Object.fromEntries([
-      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode",
+      "stateDot", "stateText", "count", "historyCount", "connect", "disconnect", "clear", "exportCSV", "importCSV", "importFile", "showQR", "privacyMode", "openSettings",
       "measuredAt", "age", "heightCm", "sex", "bodyTypeImage", "bodyType", "weightKg", "bodyFatPercent",
       "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel",
       "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance",
-      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt",
+      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt", "settingsDialog", "settingsForm", "qrURLPrefix", "settingsError", "resetSettings", "closeSettings",
     ].map((id) => [id, document.getElementById(id)]));
 
     const DB_NAME = "mc780a-monitor";
     const DB_VERSION = 1;
     const STORE_NAME = "measurements";
-    const USER_APP_URL = "https://code4fukui.github.io/bodychecker/user.html";
+    const DEFAULT_QR_URL_PREFIX = "https://code4fukui.github.io/bodychecker/user.html?";
+    const QR_URL_PREFIX_STORAGE_KEY = "bodychecker.qrURLPrefix";
 
     let port;
     let reader;
@@ -996,6 +1077,7 @@
     let currentRecord = null;
     let qrMode = false;
     let privacyMode = false;
+    let qrURLPrefix = loadQRURLPrefix();
     let fatStandards = [];
     let muscleStandards = [];
 
@@ -1177,8 +1259,8 @@
     }
 
     function formatWeightRatio(value, weightKg) {
-      if (value == null || weightKg == null || weightKg <= 0) return "";
-      return `（体重比 ${(value / weightKg * 100).toFixed(1)}%）`;
+      if (value == null || weightKg == null || weightKg <= 0) return "--";
+      return `${(value / weightKg * 100).toFixed(1)}%`;
     }
 
     function muscleBalance(fields, pair) {
@@ -1343,10 +1425,36 @@
       return data;
     }
 
+    function loadQRURLPrefix() {
+      return localStorage.getItem(QR_URL_PREFIX_STORAGE_KEY) || DEFAULT_QR_URL_PREFIX;
+    }
+
     function userURL(record) {
-      const url = new URL(USER_APP_URL);
-      url.search = encodePayload(compactRecord(record));
-      return url.href;
+      return qrURLPrefix + encodePayload(compactRecord(record));
+    }
+
+    function openSettings() {
+      els.qrURLPrefix.value = qrURLPrefix;
+      els.settingsError.textContent = "";
+      els.settingsDialog.showModal();
+      els.qrURLPrefix.focus();
+    }
+
+    async function saveSettings(event) {
+      event.preventDefault();
+      const value = els.qrURLPrefix.value.trim();
+      try {
+        const url = new URL(value);
+        if (!/^https?:$/.test(url.protocol)) throw new Error();
+      } catch {
+        els.settingsError.textContent = "http:// または https:// で始まる有効なURLを入力してください。";
+        return;
+      }
+      qrURLPrefix = value;
+      localStorage.setItem(QR_URL_PREFIX_STORAGE_KEY, qrURLPrefix);
+      els.settingsDialog.close();
+      if (qrMode) await updateQR();
+      appendLog(`QR URLプリフィックスを保存しました: ${qrURLPrefix}`);
     }
 
     async function updateQR() {
@@ -1687,23 +1795,6 @@
 
     function renderSegments(fields) {
       els.segments.textContent = "";
-      for (const [segment] of SEGMENTS) {
-        const div = document.createElement("div");
-        div.className = "segment";
-        div.innerHTML = `
-          <h3>${SEGMENT_LABELS[segment]}</h3>
-          <div class="kv">
-            <span>脂肪率</span><strong>${formatDecimal(fields[`${segment}BodyFatPercent`])}%</strong>
-            <span>脂肪量</span><strong>${formatDecimal(fields[`${segment}FatMassKg`])} kg</strong>
-            <span>除脂肪量</span><strong>${formatDecimal(fields[`${segment}FatFreeMassKg`])} kg</strong>
-            <span>筋肉量</span><strong>${formatDecimal(fields[`${segment}MuscleMassKg`])} kg${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}</strong>
-            <span>脂肪スコア</span><strong>${formatDecimal(fields[`${segment}BodyFatScore`])}</strong>
-            <span>筋肉スコア</span><strong>${formatDecimal(fields[`${segment}MuscleScore`])}</strong>
-            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
-          </div>
-        `;
-        els.segments.append(div);
-      }
       const average = scoreAverage(fields);
       if (average) {
         const div = document.createElement("div");
@@ -1713,6 +1804,24 @@
           <div class="kv">
             <span>脂肪スコア</span><strong>${formatDecimal(average.fatScore)}</strong>
             <span>筋肉スコア</span><strong>${formatDecimal(average.muscleScore)}</strong>
+          </div>
+        `;
+        els.segments.append(div);
+      }
+      for (const [segment] of SEGMENTS) {
+        const div = document.createElement("div");
+        div.className = "segment";
+        div.innerHTML = `
+          <h3>${SEGMENT_LABELS[segment]}</h3>
+          <div class="kv">
+            <span>脂肪率</span><strong>${formatDecimal(fields[`${segment}BodyFatPercent`])}%</strong>
+            <span>脂肪量</span><strong>${formatDecimal(fields[`${segment}FatMassKg`])} kg</strong>
+            <span>除脂肪量</span><strong>${formatDecimal(fields[`${segment}FatFreeMassKg`])} kg</strong>
+            <span>筋肉量</span><strong>${formatDecimal(fields[`${segment}MuscleMassKg`])} kg</strong>
+            <span>筋肉量体重比</span><strong>${formatWeightRatio(fields[`${segment}MuscleMassKg`], fields.weightKg)}</strong>
+            <span>脂肪スコア</span><strong>${formatDecimal(fields[`${segment}BodyFatScore`])}</strong>
+            <span>筋肉スコア</span><strong>${formatDecimal(fields[`${segment}MuscleScore`])}</strong>
+            ${segment === "trunk" ? "" : `<span>位相角（50kHz）</span><strong>${formatPhaseAngle(fields[`${segment}PhaseAngle50kHz`])}°</strong>`}
           </div>
         `;
         els.segments.append(div);
@@ -2045,6 +2154,14 @@
     els.deleteAllHistory.addEventListener("click", confirmDeleteAllHistory);
     els.showQR.addEventListener("click", toggleQRMode);
     els.privacyMode.addEventListener("click", togglePrivacyMode);
+    els.openSettings.addEventListener("click", openSettings);
+    els.settingsForm.addEventListener("submit", saveSettings);
+    els.closeSettings.addEventListener("click", () => els.settingsDialog.close());
+    els.resetSettings.addEventListener("click", () => {
+      els.qrURLPrefix.value = DEFAULT_QR_URL_PREFIX;
+      els.settingsError.textContent = "";
+      els.qrURLPrefix.focus();
+    });
     await Promise.all([loadFatStandards(), loadMuscleStandards()]);
     clearDisplay();
   </script>
