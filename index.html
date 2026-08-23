@@ -716,6 +716,23 @@
       padding: 2px;
     }
 
+    .qr-body > * {
+      grid-area: 1 / 1;
+    }
+
+    .qr-disconnected {
+      align-self: center;
+      justify-self: center;
+      color: var(--muted);
+      font-size: clamp(48px, 8vw, 112px);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .qr-disconnected[hidden] {
+      display: none;
+    }
+
     #qrCanvas {
       width: min(100%, calc(100vh - 420px), 620px);
       height: auto;
@@ -1014,6 +1031,7 @@
         <div id="qrView" class="qr-screen" hidden>
           <div class="qr-body">
             <canvas id="qrCanvas" width="420" height="420"></canvas>
+            <div id="qrDisconnected" class="qr-disconnected" hidden>未接続</div>
           </div>
         </div>
       </div>
@@ -1143,7 +1161,7 @@
       "measuredAt", "age", "heightCm", "sex", "bodyTypeImage", "bodyType", "weightKg", "bodyFatPercent",
       "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel",
       "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance",
-      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "app", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt", "settingsDialog", "settingsForm", "qrURLPrefix", "settingsError", "resetSettings", "closeSettings",
+      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "app", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrDisconnected", "qrLink", "qrURL", "qrMeasuredAt", "settingsDialog", "settingsForm", "qrURLPrefix", "settingsError", "resetSettings", "closeSettings",
     ].map((id) => [id, document.getElementById(id)]));
 
     const DB_NAME = "mc780a-monitor";
@@ -1556,6 +1574,12 @@
       });
     }
 
+    function updateQRConnectionState() {
+      const disconnected = qrMode && (!keepReading || !port?.readable);
+      els.qrDisconnected.hidden = !disconnected;
+      els.qrCanvas.hidden = disconnected;
+    }
+
     async function setQRMode(enabled) {
       qrMode = enabled && Boolean(currentRecord);
       els.measurementView.hidden = qrMode;
@@ -1566,6 +1590,7 @@
       els.showQR.setAttribute("aria-pressed", String(qrMode));
       els.showQR.textContent = qrMode ? "測定値表示" : "QR表示";
       els.showQR.disabled = !currentRecord && !qrMode;
+      updateQRConnectionState();
       if (qrMode) await updateQR();
     }
 
@@ -2198,6 +2223,7 @@
         els.connect.disabled = true;
         els.disconnect.disabled = false;
         setState("on", "接続中");
+        updateQRConnectionState();
         readLoop();
       } catch (error) {
         setState("err", "接続失敗");
@@ -2236,6 +2262,7 @@
         els.connect.disabled = false;
         els.disconnect.disabled = true;
         setState("", "未接続");
+        updateQRConnectionState();
       }
     }
 
