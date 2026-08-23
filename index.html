@@ -169,6 +169,21 @@
       box-shadow: var(--shadow);
     }
 
+    .qr-side-info {
+      display: none;
+      width: 100%;
+    }
+
+    .qr-side-info .timestamp {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .qr-side-info .button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
     .button {
       display: inline-flex;
       align-items: center;
@@ -627,7 +642,7 @@
 
     .history-item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
       width: 100%;
       padding: 11px 12px;
@@ -684,15 +699,6 @@
       white-space: nowrap;
     }
 
-    .history-value {
-      align-self: center;
-      color: var(--accent);
-      font-size: 14px;
-      font-weight: 720;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
     .qr-screen[hidden] {
       display: none;
     }
@@ -704,11 +710,10 @@
 
     .qr-body {
       display: grid;
-      grid-template-rows: minmax(0, 1fr) auto auto;
-      gap: 10px;
+      place-items: center;
       justify-items: center;
       min-height: calc(100vh - 198px);
-      padding: 14px;
+      padding: 2px;
     }
 
     #qrCanvas {
@@ -730,6 +735,86 @@
       padding: 9px;
       color: var(--text);
       font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .app.qr-mode .qr-side-info {
+      display: block;
+    }
+
+    @media (min-width: 921px) and (orientation: landscape) {
+      .app.qr-mode {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 4px;
+        width: 100%;
+        max-width: none;
+        height: 100vh;
+        padding: 2px;
+        overflow: hidden;
+      }
+
+      .app.qr-mode header {
+        grid-column: 2;
+        grid-row: 1;
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 0;
+      }
+
+      .app.qr-mode .statusbar {
+        justify-content: flex-start;
+      }
+
+      .app.qr-mode .controls {
+        grid-column: 2;
+        grid-row: 2;
+        align-content: flex-start;
+        align-items: stretch;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        margin: 0;
+        overflow: auto;
+      }
+
+      .app.qr-mode .controls > .button {
+        width: 100%;
+      }
+
+      .app.qr-mode #clear {
+        order: 100;
+        min-height: 72px;
+        margin-top: auto;
+        border-width: 2px;
+        font-size: 20px;
+        font-weight: 720;
+      }
+
+      .app.qr-mode #mainGrid {
+        grid-column: 1;
+        grid-row: 1 / -1;
+        min-width: 0;
+        min-height: 0;
+        height: 100%;
+      }
+
+      .app.qr-mode #mainGrid > .panel,
+      .app.qr-mode .qr-screen,
+      .app.qr-mode .qr-body {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .app.qr-mode .qr-body {
+        justify-items: start;
+        padding: 0;
+      }
+
+      .app.qr-mode #qrCanvas {
+        width: min(100%, calc(100vh - 6px), calc(100vw - 308px));
+        max-height: 100%;
+      }
     }
 
     table {
@@ -841,7 +926,7 @@
   </style>
 </head>
 <body>
-  <main class="app">
+  <main id="app" class="app">
     <header>
       <h1>MC-780A Monitor</h1>
       <div class="statusbar">
@@ -858,6 +943,12 @@
       <button id="showQR" class="button secondary" type="button" disabled aria-pressed="false">QR表示</button>
       <button id="privacyMode" class="button secondary" type="button" aria-pressed="false">プライバシーモード</button>
       <button id="openSettings" class="button secondary" type="button">設定</button>
+      <div class="qr-side-info">
+        <h2>QRコード</h2>
+        <span id="qrMeasuredAt" class="timestamp">--</span>
+        <a id="qrLink" class="button" target="_blank" rel="noopener">user.htmlを開く</a>
+        <textarea id="qrURL" readonly rows="5" aria-label="QRコードのURL"></textarea>
+      </div>
       <input id="importFile" type="file" accept=".csv,text/csv" hidden>
     </section>
 
@@ -921,14 +1012,8 @@
           <div id="segments" class="segments"></div>
         </div>
         <div id="qrView" class="qr-screen" hidden>
-          <div class="panel-head">
-            <h2>QRコード</h2>
-            <span id="qrMeasuredAt" class="timestamp">--</span>
-          </div>
           <div class="qr-body">
             <canvas id="qrCanvas" width="420" height="420"></canvas>
-            <a id="qrLink" class="button" target="_blank" rel="noopener">user.htmlを開く</a>
-            <textarea id="qrURL" readonly rows="3"></textarea>
           </div>
         </div>
       </div>
@@ -1058,7 +1143,7 @@
       "measuredAt", "age", "heightCm", "sex", "bodyTypeImage", "bodyType", "weightKg", "bodyFatPercent",
       "weightKgDiff", "bodyFatPercentDiff", "muscleMassKgDiff", "bmiDiff", "visceralFatLevelDiff", "smiDiff", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel",
       "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance",
-      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt", "settingsDialog", "settingsForm", "qrURLPrefix", "settingsError", "resetSettings", "closeSettings",
+      "scoreMap", "segments", "fields", "checksum", "log", "lastLength", "history", "refreshHistory", "deleteAllHistory", "app", "mainGrid", "detailPanel", "measurementView", "qrView", "qrCanvas", "qrLink", "qrURL", "qrMeasuredAt", "settingsDialog", "settingsForm", "qrURLPrefix", "settingsError", "resetSettings", "closeSettings",
     ].map((id) => [id, document.getElementById(id)]));
 
     const DB_NAME = "mc780a-monitor";
@@ -1462,11 +1547,12 @@
       const url = userURL(currentRecord);
       els.qrURL.value = url;
       els.qrLink.href = url;
+      els.qrLink.removeAttribute("aria-disabled");
       els.qrMeasuredAt.textContent = currentRecord.fields?.measuredAt ?? "--";
       await QRCode.toCanvas(els.qrCanvas, url, {
         width: 900,
-        margin: 2,
-        errorCorrectionLevel: "M",
+        margin: 3,
+        errorCorrectionLevel: "L",
       });
     }
 
@@ -1475,9 +1561,11 @@
       els.measurementView.hidden = qrMode;
       els.qrView.hidden = !qrMode;
       els.detailPanel.hidden = qrMode;
+      els.app.classList.toggle("qr-mode", qrMode);
       els.mainGrid.classList.toggle("qr-mode", qrMode);
       els.showQR.setAttribute("aria-pressed", String(qrMode));
       els.showQR.textContent = qrMode ? "測定値表示" : "QR表示";
+      els.showQR.disabled = !currentRecord && !qrMode;
       if (qrMode) await updateQR();
     }
 
@@ -1901,11 +1989,21 @@
       renderFields(fields);
     }
 
-    function resetMeasurementDisplay() {
+    function resetMeasurementDisplay(preserveQRMode = false) {
       selectedHistoryId = null;
       currentRecord = null;
-      setQRMode(false);
-      els.showQR.disabled = true;
+      if (preserveQRMode) {
+        const context = els.qrCanvas.getContext("2d");
+        context.clearRect(0, 0, els.qrCanvas.width, els.qrCanvas.height);
+        els.qrURL.value = "";
+        els.qrLink.removeAttribute("href");
+        els.qrLink.setAttribute("aria-disabled", "true");
+        els.qrMeasuredAt.textContent = "--";
+        els.showQR.disabled = false;
+      } else {
+        setQRMode(false);
+        els.showQR.disabled = true;
+      }
       for (const id of ["measuredAt", "age", "heightCm", "sex", "bodyType", "weightKg", "bodyFatPercent", "muscleMassKg", "fatMassKg", "bmi", "visceralFatLevel", "basalMetabolicRateKcal", "appendicularSkeletalMuscleMassKg", "appendicularSkeletalMuscleMassHeightSquared", "wholeBodyPhaseAngle50kHz", "armMuscleBalance", "legMuscleBalance"]) {
         els[id].textContent = "--";
         els[id].classList.remove("value-good", "value-best", "value-bad", "value-warn", "balance-warn", "balance-bad");
@@ -1952,20 +2050,17 @@
         const main = document.createElement("span");
         const titleNode = document.createElement("span");
         const sub = document.createElement("span");
-        const value = document.createElement("span");
         const remove = document.createElement("button");
         main.className = "history-main";
         titleNode.className = "history-title";
         sub.className = "history-sub";
-        value.className = "history-value";
         remove.type = "button";
         remove.className = "history-delete";
         titleNode.textContent = title;
         sub.textContent = `${subject} / ${measured}`;
-        value.textContent = `${formatDecimal(entry.weightKg)} kg`;
         remove.textContent = "削除";
         main.append(titleNode, sub);
-        button.append(main, value, remove);
+        button.append(main, remove);
         button.addEventListener("click", async () => {
           const stored = await getMeasurement(entry.id);
           if (!stored) return;
@@ -2145,8 +2240,9 @@
     }
 
     function clearDisplay() {
+      const preserveQRMode = qrMode;
       receivedCount = 0;
-      resetMeasurementDisplay();
+      resetMeasurementDisplay(preserveQRMode);
       els.count.textContent = "0";
       els.log.textContent = "";
       els.lastLength.textContent = "0 bytes";
