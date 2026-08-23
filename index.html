@@ -1666,7 +1666,7 @@
       target.append(base, diff);
       if (status) {
         const badge = document.createElement("span");
-        badge.className = status.good ? "good" : "warn";
+        badge.className = status.className ?? (status.good ? "good" : "warn");
         badge.textContent = status.label;
         target.append(badge);
       }
@@ -1685,13 +1685,25 @@
 
     function setVisceralFatDiff(fields) {
       const level = fields.visceralFatLevel;
-      const healthyMax = 12;
-      const status = level == null ? null : {
-        good: level <= healthyMax,
-        label: level <= healthyMax ? "範囲内" : "高め",
+      const healthyMax = 9.5;
+      const status = level == null ? null : level < 10 ? {
+        good: true,
+        className: "good",
+        valueClass: "good",
+        label: "標準",
+      } : level < 15 ? {
+        good: false,
+        className: "warn",
+        valueClass: "warn",
+        label: "やや過剰　⚠️ 少し注意",
+      } : {
+        good: false,
+        className: "warn",
+        valueClass: "bad",
+        label: "過剰　🔴 改善推奨",
       };
-      setValueStatus("visceralFatLevel", status?.good ?? null);
-      setRangeDiff("visceralFatLevelDiff", level, healthyMax, "健康範囲上限", "", level == null ? null : level - healthyMax, status);
+      setValueStatusClass("visceralFatLevel", status?.valueClass ?? null);
+      setRangeDiff("visceralFatLevelDiff", level, healthyMax, "標準範囲上限", "", level == null ? null : level - healthyMax, status);
     }
 
     function clampScore(value) {
